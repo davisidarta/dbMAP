@@ -9,7 +9,7 @@ import pydiffmap as pdm
 import umap
 
 
-def Run_dbMAP(diff = res['DiffusionComponents'], n_neighbors = 30, n_components = 2, learning_rate = 1.0, min_dist = 0.5, spread = 1.0):
+def Run_dbMAP(diff, n_neighbors = 30, n_components = 2, learning_rate = 1.0, min_dist = 0.5, spread = 1.0):
 	"""Runs UMAP appropriately on the learned diffusion components
 	:param diff: Results from Run_Diffusion (Acessible via res['DiffusionComponents']).
 	:param n_components: Results dimensions. Use 2 for 2D plots and 3 for 3D plots.

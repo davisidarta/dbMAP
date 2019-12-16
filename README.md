@@ -7,7 +7,7 @@ A python repo for running diffusion-based Manifold Approximaiton and Projection,
    dbMAP has been implemented in Python3, and can be installed using:
 ```
      $> git clone git://github.com/labcellsign/py_dbMAP.git
-     $> cd Palantir
+     $> cd py_dbMAP
      $> sudo -H pip3 install .
 ```
    dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands.

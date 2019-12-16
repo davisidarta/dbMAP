@@ -27,7 +27,7 @@ if not issparse(data):
  if force_sparse:
   print('Converting from dense to sparse matrix. Determing nearest neighbor graph...')
   data=data.tocsr()
- else
+ else:
   print('Dense matrix input. Using sparse matrices is recommended for scalability. Determing nearest neighbor graph...')
   nbrs = NearestNeighbors(n_neighbors=int(knn), metric='euclidean',
                               n_jobs=n_jobs).fit(data.values)

@@ -129,7 +129,7 @@ if not issparse(data):
   res['DiffusionComponents'] = res['EigenVectors'].values[:,] * (eig_vals / (1 - eig_vals))
   res['DiffusionComponents'] = pd.DataFrame(result, index=res['EigenVectors'].index)
 
-  return res
+   return res
 
 
 

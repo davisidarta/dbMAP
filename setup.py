@@ -10,10 +10,10 @@ if sys.version_info.minor < 6:
     warn('Analysis methods were developed using Python 3.6')
 
 # get version
-with open('src/palantir/version.py') as f:
+with open('src/version.py') as f:
     exec(f.read())
 
-setup(name='palantir',
+setup(name='dbmap',
       version=__version__,# read in from the exec of version.py; ignore error
       description='dbMAP - a generalized approach for optimal visualization of single-cell data.',
       url='https://github.com/labcellsign/py_dbMAP',

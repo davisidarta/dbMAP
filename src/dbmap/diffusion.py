@@ -23,7 +23,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
   
   # Determine the kernel
   N = data.shape[0]
-   if not issparse(data):
+  if not issparse(data):
       if force_sparse=T
         print('Converting from dense to sparse matrix. Determing nearest neighbor graph...')
         data=data.tocsr()
@@ -52,7 +52,8 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
         # Diffusion components
         kernel = W + W.T
 
-    if issparse(data):
+        
+  if issparse(data):
         print('Sparse matrix input. Determing nearest neighbor graph...')
         nbrs = NearestNeighbors(n_neighbors=int(knn), metric='euclidean',
                                  n_jobs=n_jobs).fit(data)
@@ -77,10 +78,10 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
         # Diffusion components
         kernel = W + W.T
 
-    # Markov
-    D = np.ravel(kernel.sum(axis=1))
+   # Markov
+   D = np.ravel(kernel.sum(axis=1))
 
-    if alpha > 0:
+   if alpha > 0:
         # L_alpha
         D[D != 0] = D[D != 0] ** (-alpha)
         mat = csr_matrix((D, (range(N), range(N))), shape=[N, N])

@@ -80,7 +80,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 	# Scale the data
 	use_eigs = list(range(1, n_eigs))
 	eig_vals = np.ravel(res['EigenValues'])
-	res['DiffusionComponents'] = res['EigenVectors'].values[:,] * (eig_vals / (1 - eig_vals))
+	result = res['EigenVectors'].values[:,] * (eig_vals / (1 - eig_vals))
 	res['DiffusionComponents'] = pd.DataFrame(result, index=res['EigenVectors'].index)
 
 	return res

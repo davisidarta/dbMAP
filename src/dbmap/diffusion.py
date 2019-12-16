@@ -7,6 +7,7 @@ from scipy.io import mmread
 import tables
 import pydiffmap as pdm
 
+
 def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_sparse = True):
   """Run Diffusion maps using the adaptive anisotropic kernel proposed by Setty et al, Nature Biotechnology 2019 - Characterization of cell fate probabilities in single-cell data with Palantir
   
@@ -25,7 +26,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 			data=data.tocsr()
 		else:
 			print('Dense matrix input. Using sparse matrices is recommended for scalability. Determing nearest neighbor graph...')
-
+		
 		nbrs = NearestNeighbors(n_neighbors=int(knn), metric = 'euclidean', n_jobs=n_jobs).fit(data.values)
 		kNN = nbrs.kneighbors_graph(data.values, mode='distance')
 
@@ -107,16 +108,3 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 	res['DiffusionComponents'] = res['EigenVectors'].values[:,] * (eig_vals / (1 - eig_vals))
 	res['DiffusionComponents'] = pd.DataFrame(result, index=res['EigenVectors'].index)
 	return res
-
-
-
-
-
-
-
-
-
-
-
-
-

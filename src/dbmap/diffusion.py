@@ -24,7 +24,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 # Determine the kernel
 N = data.shape[0]
 if not issparse(data):
- if force_sparse=T
+ if force_sparse==T
   print('Converting from dense to sparse matrix. Determing nearest neighbor graph...')
   data=data.tocsr()
  else

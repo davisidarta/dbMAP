@@ -23,7 +23,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 	# Determine the kernel
 	N = data.shape[0]
 	if (((issparse(data) == False) & (force_sparse == False))):
-		print('Using dense input. Converting to sparse with 'force_sparse = True' is recommended for scalability. Determing nearest neighbor graph...')
+		print('Using dense input. Converting to sparse with force_sparse = True is recommended for scalability. Determing nearest neighbor graph...')
 		nbrs = NearestNeighbors(n_neighbors=int(knn), metric = 'euclidean', n_jobs=n_jobs).fit(data.values)
 		kNN = nbrs.kneighbors_graph(data.values, mode='distance')
 		# Adaptive k

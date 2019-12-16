@@ -75,7 +75,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 	if n_eigs < 3:
 		n_eigs = np.argsort(vals[:(len(vals) - 1)] - vals[1:])[-2] + 1
 	res['Suggested_eigs'] = n_eigs 
-	print("Suggestion of components to use, accordingly to Setty et al:" + n_eigs)
+	
 
 	# Scale the data
 	use_eigs = list(range(1, n_eigs))

@@ -10,7 +10,7 @@ import pydiffmap as pdm
 
 
 
-def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_sparse = T):
+def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_sparse = True):
   """Run Diffusion maps using the adaptive anisotropic kernel proposed by Setty et al, Nature Biotechnology 2019 - Characterization of cell fate probabilities in single-cell data with Palantir
   
   :param data: Data matrix to diffuse from
@@ -24,7 +24,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 # Determine the kernel
 N = data.shape[0]
 if not issparse(data):
- if force_sparse==T
+ if force_sparse == True
   print('Converting from dense to sparse matrix. Determing nearest neighbor graph...')
   data=data.tocsr()
  else

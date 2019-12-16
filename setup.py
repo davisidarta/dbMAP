@@ -10,7 +10,7 @@ if sys.version_info.minor < 6:
     warn('Analysis methods were developed using Python 3.6')
 
 # get version
-with open('src/version.py') as f:
+with open('src/dbmap/version.py') as f:
     exec(f.read())
 
 setup(name='dbmap',

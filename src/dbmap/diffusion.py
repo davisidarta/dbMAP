@@ -2,11 +2,12 @@ import numpy as np
 import pandas as pd
 import os.path
 import fcsparser
-from scipy.sparse import csc_matrix
+from sklearn.neighbors import NearestNeighbors
+from scipy.sparse import csc_matrix, find, issparse
+from scipy.sparse.linalg import eigs
 from scipy.io import mmread
 import tables
 import pydiffmap as pdm
-
 
 def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_sparse = True):
 	"""Run Diffusion maps using the adaptive anisotropic kernel proposed by Setty et al, Nature Biotechnology 2019 - Characterization of cell fate probabilities in single-cell data with Palantir

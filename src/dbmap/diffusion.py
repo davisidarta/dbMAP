@@ -18,9 +18,9 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
   :param force_sparse: Whether to convert input data to the sparse format for speeding calculations.
   :return: Multiscaled results, diffusion components, associated eigenvalues and suggested number of resulting components to use.
   """
-	# Determine the kernel
-	N = data.shape[0]
-	if not issparse(data):
+# Determine the kernel
+N = data.shape[0]
+  if not issparse(data):
 		if force_sparse:
 			print('Converting from dense to sparse matrix. Determing nearest neighbor graph...')
 			data=data.tocsr()

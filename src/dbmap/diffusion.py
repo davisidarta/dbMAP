@@ -43,6 +43,7 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 		# Diffusion components
 		kernel = W + W.T
 
+		
 	if issparse(data):
 		print('Sparse matrix input. Determing nearest neighbor graph...')
 		nbrs = NearestNeighbors(n_neighbors=int(knn), metric='euclidean', n_jobs=n_jobs).fit(data)

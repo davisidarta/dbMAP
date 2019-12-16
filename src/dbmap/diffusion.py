@@ -3,7 +3,7 @@ import pandas as pd
 import os.path
 import fcsparser
 from sklearn.neighbors import NearestNeighbors
-from scipy.sparse import csc_matrix, find, issparse
+from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
 from scipy.io import mmread
 import tables

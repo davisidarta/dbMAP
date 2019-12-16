@@ -8,6 +8,7 @@ from scipy.sparse.linalg import eigs
 from scipy.io import mmread
 import tables
 import pydiffmap as pdm
+import scanpy as sc
 
 def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_sparse = True):
 	"""Run Diffusion maps using the adaptive anisotropic kernel proposed by Setty et al, Nature Biotechnology 2019 - Characterization of cell fate probabilities in single-cell data with Palantir
@@ -21,15 +22,32 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 
 	# Determine the kernel
 	N = data.shape[0]
-	if not issparse(data):
+	if not issparse(data) and if not force_sparse::
+		print('Using dense input. Converting to sparse with 'force_sparse = True' is recommended for scalability. Determing nearest neighbor graph...')
+		nbrs = NearestNeighbors(n_neighbors=int(knn), metric = 'euclidean', n_jobs=n_jobs).fit(data.values)
+		kNN = nbrs.kneighbors_graph(data.values, mode='distance')
+		# Adaptive k
+		adaptive_k = int(np.floor(knn / 2))
+		nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=n_jobs).fit(data.values)
+		adaptive_std = nbrs.kneighbors_graph(data.values, mode='distance').max(axis=1)
+		adaptive_std = np.ravel(adaptive_std.todense())
+		# Kernel
+		x, y, dists = find(kNN)
+		# X, y specific stds
+		dists = dists / adaptive_std[x]
+		W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])
+		# Diffusion components
+		kernel = W + W.T
+					
+	if not issparse(data) and if force_sparse::
 		print('Converting from dense to sparse matrix. Determing nearest neighbor graph...')
 		data=data.tocsr()
-		nbrs = NearestNeighbors(n_neighbors=int(knn), metric = 'euclidean', n_jobs=n_jobs).fit(data.values)
+		nbrs = NearestNeighbors(n_neighbors=int(knn), metric = 'euclidean', n_jobs=n_jobs).fit(data)
 		kNN = nbrs.kneighbors_graph(data.values, mode='distance')
 
 		# Adaptive k
 		adaptive_k = int(np.floor(knn / 2))
-		nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=n_jobs).fit(data.values)
+		nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=n_jobs).fit(data)
 		adaptive_std = nbrs.kneighbors_graph(data.values, mode='distance').max(axis=1)
 		adaptive_std = np.ravel(adaptive_std.todense())
 		# Kernel

@@ -19,8 +19,8 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 	:param force_sparse: Whether to convert input data to the sparse format for speeding calculations.
 	:return: Multiscaled results, diffusion components, associated eigenvalues and suggested number of resulting components to use.
 	"""
-
-	print('Sparse matrix input. Determing nearest neighbor graph...')
+	N = data_df.shape[0]
+	print('Converting input to sparse. Determing nearest neighbor graph...')
 	nbrs = NearestNeighbors(n_neighbors=int(knn), metric='euclidean', n_jobs=n_jobs).fit(data)
 	kNN = nbrs.kneighbors_graph(data, mode='distance')
 	# Adaptive k

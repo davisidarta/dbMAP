@@ -18,7 +18,13 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 	:return: Multiscaled results, diffusion components, associated eigenvalues and suggested number of resulting components to use.
 	"""
 	print('Converting input to sparse. Determing nearest neighbor graph...')
-	data = data.tocsr()
+	if force_sparse == True:
+		data = data.tocsr()
+		print('Converting input to sparse for efficiency. Determing nearest neighbor graph...')
+	
+		else:
+			print('Dense input. Determing nearest neighbor graph...')
+
 	N = data.shape[0]
 	nbrs = NearestNeighbors(n_neighbors=int(knn), metric='euclidean', n_jobs=n_jobs).fit(data)
 	kNN = nbrs.kneighbors_graph(data, mode='distance')

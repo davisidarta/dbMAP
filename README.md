@@ -1,5 +1,5 @@
 # dbMAP
-A python repo for running diffusion-based Manifold Approximaiton and Projection, a dimensionality reduction method based on diffusion maps and UMAP that is both generalized and computationally efficient.
+A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a dimensionality reduction method based on diffusion maps and UMAP that is both generalized and computationally efficient.
 
 
 # Installation and dependencies
@@ -14,17 +14,30 @@ A python repo for running diffusion-based Manifold Approximaiton and Projection,
 
 # Usage
 
-  dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. To produce a dbMAP embedding from
-  a high dimensional data matrix, Run_Diffusion must be run on the total matrix, and Run_dbMAP must be run on Run_Diffusion       results:
-  
+  dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. It takes three steps to run dbMAP on a high-dimensional matrix (such as a gene expression matrix):
+        
   ```
   import dbmap
   from sklearn.datasets import load_digits
+  import matplotlib.pyplot as plot
   
+  #Load some data
   digits = load_digits()
   
+  #Runs Diffusion Maps to approximate the Laplace-Beltrami operator
   diff = Run_Diffusion(digits)
-  embedding = Run_dbMAP(diff = diff)
+  
+  #Select the most significant eigenvectors to use in dbMAP. This choice should be made by evaluating an elbow plot. 
+  #If none is provided, estimates an adequate number using eigen gap. The selected eigenvectors (diffusion components) 
+  #will be multiscaled as described by Setty et al.
+  
+  plot(diff['EigenValues'])
+  
+  res = Multiscale(diff = diff, eigs = None)  
+  
+  #Visualize the high-dimensional, multiscaled diffusion map results with UMAP by running dbMAP.
+  
+  embedding = Run_dbMAP(res = res)
    
   ```
   
@@ -32,7 +45,7 @@ A python repo for running diffusion-based Manifold Approximaiton and Projection,
 
 # Citations
 
-dbMAP is powered by algorithms initially proposed by Palantir and UMAP. If you use dbMAP for your work, please cite the following:
+dbMAP is powered by algorithms initially proposed in Palantir and by UMAP. If you use dbMAP for your work, please cite the following:
 
 ```
 Diffusion-based Manifold Approximation and Projection (dbMAP): a comprehensive, generalized and computationally efficient approach for single-cell data visualization. In revision.

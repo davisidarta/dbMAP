@@ -77,6 +77,8 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 		n_eigs = np.argsort(vals[:(len(vals) - 1)] - vals[1:])[-2] + 1
 	res['Suggested_eigs'] = n_eigs 
 	
+	return res
+	
 	
 def Multiscale(eigs, n_eigs=None):
 	"""Determine multi scale space of the data

@@ -80,22 +80,22 @@ def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_spars
 	return res
 	
 	
-def Multiscale(eigs, n_eigs=None):
+def Multiscale(diff, n_eigs=None):
 	"""Determine multi scale space of the data
 	:param dm_res: Diffusion map results from run_diffusion_maps
 	:param n_eigs: Number of eigen vectors to use. If None specified, the number of eigen vectors will be determined using eigen gap
 	:return: Multi scale data matrix
 	"""
 	if n_eigs is None:
-		vals = np.ravel(res['EigenValues'])
+		vals = np.ravel(diff['EigenValues'])
 		n_eigs = np.argsort(vals[:(len(vals) - 1)] - vals[1:])[-1] + 1
 		if n_eigs < 3:
 			n_eigs = np.argsort(vals[:(len(vals) - 1)] - vals[1:])[-2] + 1
 			
 	# Scale the data
 	use_eigs = list(range(1, n_eigs))
-	eig_vals = np.ravel(res['EigenValues'][use_eigs])
-	data = res['EigenVectors'].values[:,use_eigs] * (eig_vals / (1 - eig_vals))
-	data = pd.DataFrame(data, index=dm_res['EigenVectors'].index)
+	eig_vals = np.ravel(diff['EigenValues'][use_eigs])
+	data = diff['EigenVectors'].values[:,use_eigs] * (eig_vals / (1 - eig_vals))
+	data = pd.DataFrame(data, index=diff['EigenVectors'].index)
 	return data
 

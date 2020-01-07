@@ -19,7 +19,7 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
   ```
   import dbmap
   from sklearn.datasets import load_digits
-  import matplotlib.pyplot as plot
+  import matplotlib.pyplot as plt
   
   #Load some data
   digits = load_digits()
@@ -28,10 +28,12 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
   diff = Run_Diffusion(digits)
   
   #Select the most significant eigenvectors to use in dbMAP. This choice should be made by evaluating an elbow plot. 
+ 
+  plt.plt(diff['EigenValues'])
+  plt.show()
+
   #If none is provided, estimates an adequate number using eigen gap. The selected eigenvectors (diffusion components) 
-  #will be multiscaled as described by Setty et al.
-  
-  plot(diff['EigenValues'])
+  #should be multiscaled as described by Setty et al.
   
   res = Multiscale(diff = diff, eigs = None)  
   

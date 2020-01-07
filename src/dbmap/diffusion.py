@@ -5,9 +5,7 @@ import fcsparser
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
-from scipy.io import mmread
 import tables
-import pydiffmap as pdm
 import scanpy as sc
 
 def Run_Diffusion(data, n_components=50, knn=30, n_jobs=-1, alpha=1, force_sparse = True):

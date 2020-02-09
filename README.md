@@ -10,7 +10,7 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
      $> cd py_dbMAP
      $> sudo -H pip3 install .
 ```
-   dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands.
+   dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands. dbMAP was developed and tested in Unix environments and hasn't been reliably used in Windows yet.
 
 # Usage
 
@@ -47,10 +47,10 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
 
 # Citations
 
-dbMAP is powered by algorithms initially proposed in Palantir and by UMAP. If you use dbMAP for your work, please cite the following:
+dbMAP is powered by algorithms initially proposed by Manu Setty et al and Leland McInnes. If you use dbMAP for your work, please cite the following:
 
 ```
-Diffusion-based Manifold Approximation and Projection (dbMAP): a comprehensive, generalized and computationally efficient approach for single-cell data visualization. In revision.
+Diffusion-based Manifold Approximation and Projection (dbMAP): a comprehensive, generalized and computationally efficient approach for single-cell data visualization. Submitted.
 
 Characterization of cell fate probabilities in single-cell data with Palantir. Setty et al., Nature Biotechnology 2019.
 

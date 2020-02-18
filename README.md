@@ -61,7 +61,7 @@ plt.savefig('dbMAP_digits_numbers.png', dpi = 600)
 
 # Citations
 
-dbMAP is powered by algorithms initially proposed by Manu Setty et al and Leland McInnes. If you use dbMAP for your work, please cite the following:
+dbMAP is powered by algorithms initially proposed by Manu Setty et al and Leland McInnes. Standing on the shoulder of giants, we kindly ask that you cite the following if you use dbMAP for your work:
 
 ```
 Diffusion-based Manifold Approximation and Projection (dbMAP): a comprehensive, generalized and computationally efficient approach for single-cell data visualization. Submitted.

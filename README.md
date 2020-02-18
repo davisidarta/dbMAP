@@ -10,40 +10,54 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
      $> cd py_dbMAP
      $> sudo -H pip3 install .
 ```
-   dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands. dbMAP was developed and tested in Unix environments and hasn't been reliably used in Windows yet.
+   dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands. dbMAP was developed and tested in Unix environments and can also be used in Windows machines.
 
 # Usage
 
   dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. It takes three steps to run dbMAP on a high-dimensional matrix (such as a gene expression matrix):
         
   ```
-  import dbmap
   from sklearn.datasets import load_digits
-  import matplotlib.pyplot as plt
-  
-  #Load some data
-  digits = load_digits()
-  
-  #Runs Diffusion Maps to approximate the Laplace-Beltrami operator
-  diff = Run_Diffusion(digits)
-  
-  #Select the most significant eigenvectors to use in dbMAP. This choice should be made by evaluating an elbow plot. 
- 
-  plt.plt(diff['EigenValues'])
-  plt.show()
+import matplotlib.pyplot as plt
+import matplotlib.offsetbox as offsetbox
+import pandas as pd
+import dbmap
 
-  #If none is provided, estimates an adequate number using eigen gap. The selected eigenvectors (diffusion components) 
-  #should be multiscaled as described by Setty et al.
-  
-  res = Multiscale(diff = diff, eigs = None)  
-  
-  #Visualize the high-dimensional, multiscaled diffusion map results with UMAP by running dbMAP.
-  
-  embedding = Run_dbMAP(res = res)
+#Load some data
+digits = load_digits()
+data = digits.data
+df = pd.DataFrame(digits.data)
+
+X = digits.data
+y = digits.target
+n_samples, n_features = X.shape
+
+
+#Runs Diffusion Maps to approximate the Laplace-Beltrami operator
+diff = dbmap.diffusion.Run_Diffusion(df, force_sparse=False, n_components= 100, knn= 30)
+evals = diff['EigenValues'].ravel()
+plt.plot(evals)
+plt.show()
+plt.clf()
+
+#Select the most significant eigenvectors to use in dbMAP. This choice should be made by evaluating an elbow plot. 
+#If none is provided, estimates an adequate number using eigen gap. The selected eigenvectors (diffusion components) 
+#are then multiscaled as described by Setty et al. to avoid setting a particular number of random walks hyperparameter
+
+res = dbmap.diffusion.Multiscale(diff = diff)  
+
+#Visualize the high-dimensional, multiscaled diffusion map results with UMAP as the final step of dbMAP.
+
+embedding = dbmap.dbmap.Run_dbMAP(res = res, min_dist = 0.05, n_neighbors = 30)
+ 
+embedding_plot(embedding, 'dbMAP visualization of the Digits dataset')
+plt.show()
+
+plt.savefig('dbMAP_digits_numbers.png', dpi = 600)
    
   ```
   
-  
+  ![dbMAP visualization of the Digits dataset](https://github.com/davisidarta/py_dbMAP/blob/master/dbMAP_digits_numbers.png)
 
 # Citations
 

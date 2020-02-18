@@ -12,7 +12,7 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
 ```
    dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands. dbMAP was developed and tested in Unix environments and can also be used in Windows machines.
 
-# Usage
+# Usage - Python
 
   dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. It takes three steps to run dbMAP on a high-dimensional matrix (such as a gene expression matrix):
         
@@ -54,12 +54,66 @@ plt.savefig('dbMAP_digits_numbers.png', dpi = 600)
   
   ![dbMAP visualization of the Digits dataset](https://github.com/davisidarta/py_dbMAP/blob/master/dbMAP_digits_numbers.png)
 
+
+# Usage - R
+
+dbMAP can be easily used in R with the R library reticulate (https://rstudio.github.io/reticulate/). Here we provide an easy example on how to use it to analyze single-cell data with the Seurat single-cell genomics toolkit.
+
+  ```
+  #Load required libraries and data -> SeuratData distributes single-cell data
+  library(reticulate)
+  library(Seurat)
+  library(SeuratData)
+  
+  InstallData("pbmc3k")
+  data('pbmc3k')
+  
+  #Normalize, find variable genes and scale
+  pbmc3k <- NormalizeData(pbmc3k)
+  pbmc3k <- FindVariableFeatures(pbmc3k)
+  pbmc3k <- ScaleData(pbmc3k)
+  pbmc3k <- RunPCA(pbmc3k)
+  
+  #Load dbmap with reticulate
+  dbmap <- reticulate::import('dbmap')
+  
+  #Extract scaled data with the expression of high-variable genes
+  data <- t(dat@assays$RNA@scale.data) 
+  data <- as.sparse(data)
+  data <- r_to_py(data)
+  data <- data$tocoo()
+   
+  #Run dbMAP
+  diff <- dbmap$diffusion$Run_Diffusion(data)
+  res <- dbmap$diffusion$Multiscale(diff)
+  emb <- dbmap$dbmap$Run_dbMAP(res)
+  
+  db <- as.matrix(res)
+  embedding <- as.matrix(emb)
+  
+  #Add to Seurat
+  pbmc3k@reductions$db <- pbmc3k@reductions$pca   #Create a new reduction slot from PCA
+  rownames(db) <- colnames(pbmc3k)
+  pbmc3k@reductions$db@cell.embeddings <- db
+  
+  pbmc3k@reductions$dbmap <- pbmc3k@reductions$pca   #Create a new reduction slot from PCA
+  rownames(embedding) <- colnames(dat)
+  pbmc3k@reductions$dbmap@cell.embeddings <- embedding
+  
+  #Plot
+  DimPlot(pbmc3k, reduction = 'dbmap', group.by = 'seurat_annotations')
+ 
+  ```
+  
+  ![dbMAP visualization PBMC single-cell data](https://github.com/davisidarta/py_dbMAP/blob/master/dbMAP_idents-1.png)
+
+
 # Citations
 
 dbMAP is powered by algorithms initially proposed by Manu Setty et al and Leland McInnes. Standing on the shoulder of giants, we kindly ask that you cite the following if you use dbMAP for your work:
 
 ```
-Diffusion-based Manifold Approximation and Projection (dbMAP): a comprehensive, generalized and computationally efficient approach for single-cell data visualization. Submitted.
+Diffusion-based Manifold Approximation and Projection (dbMAP): a comprehensive, generalized and computationally efficient approach for single-cell data visualization. Submitted to double-blind peer review.
 
 Characterization of cell fate probabilities in single-cell data with Palantir. Setty et al., Nature Biotechnology 2019.
 

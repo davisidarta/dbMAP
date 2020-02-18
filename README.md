@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.offsetbox as offsetbox
 import pandas as pd
 import dbmap
+from dbmap.common import embedding_plot
 
 #Load some data
 digits = load_digits()
@@ -36,23 +37,17 @@ n_samples, n_features = X.shape
 #Runs Diffusion Maps to approximate the Laplace-Beltrami operator
 diff = dbmap.diffusion.Run_Diffusion(df, force_sparse=False, n_components= 100, knn= 30)
 evals = diff['EigenValues'].ravel()
-plt.plot(evals)
-plt.show()
+plt.plot(evals) 
+plt.show() #Select the most significant eigenvectors to use in dbMAP by evaluating an elbow plot. 
 plt.clf()
 
-#Select the most significant eigenvectors to use in dbMAP. This choice should be made by evaluating an elbow plot. 
-#If none is provided, estimates an adequate number using eigen gap. The selected eigenvectors (diffusion components) 
-#are then multiscaled as described by Setty et al. to avoid setting a particular number of random walks hyperparameter
-
+#If a number of eigenvector is not chosen, Multiscale() estimates an adequate number using the eigen gap. 
 res = dbmap.diffusion.Multiscale(diff = diff)  
 
 #Visualize the high-dimensional, multiscaled diffusion map results with UMAP as the final step of dbMAP.
-
 embedding = dbmap.dbmap.Run_dbMAP(res = res, min_dist = 0.05, n_neighbors = 30)
- 
 embedding_plot(embedding, 'dbMAP visualization of the Digits dataset')
 plt.show()
-
 plt.savefig('dbMAP_digits_numbers.png', dpi = 600)
    
   ```

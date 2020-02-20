@@ -9,8 +9,8 @@ import pydiffmap as pdm
 import umap
 
 
-def Run_dbMAP(res, n_neighbors = 30, n_components = 2, learning_rate = 1.0, min_dist = 0.5, spread = 1.0):
-	"""Runs UMAP appropriately on the learned diffusion components
+def map(res, n_neighbors = 30, n_components = 2, learning_rate = 1.0, min_dist = 0.5, spread = 1.0):
+	"""Runs UMAP appropriately on the learned diffusion components to map them into a low-dimensional visualization.
 	:param res: Results from Run_Diffusion (Acessible via res['DiffusionComponents']). For optimal results, use the results from Multiscale as input.
 	:param n_components: Results dimensions. Use 2 for 2D plots and 3 for 3D plots.
 	:param n_jobs: Number of threads to use in calculations. Defaults to all but one.

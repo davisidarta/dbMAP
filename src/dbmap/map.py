@@ -1,11 +1,3 @@
-import numpy as np
-import pandas as pd
-import os.path
-import fcsparser
-from scipy.sparse import csc_matrix
-from scipy.io import mmread
-import tables
-import pydiffmap as pdm
 import umap
 
 

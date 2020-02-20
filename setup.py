@@ -16,8 +16,8 @@ with open('src/dbmap/version.py') as f:
 setup(name='dbmap',
       version=__version__,# read in from the exec of version.py; ignore error
       description='dbMAP - a generalized approach for optimal visualization of single-cell data.',
-      url='https://github.com/labcellsign/py_dbMAP',
-      author='Davi Sidarta-Oliveira',
+      url='https://github.com/XXX/py_dbMAP',
+      author='Double Blind Peer Review',
       author_email='davisidarta@gmail.com',
       package_dir={'': 'src'},
       packages=['dbmap'],
@@ -35,6 +35,7 @@ setup(name='dbmap',
           'matplotlib>=2.2.2',
           'seaborn>=0.8.1',
           'tzlocal',
-          'rpy2>=3.0.2',
-          ],
+          'scanpy'
+          'scikit-build'
+      ],
       )

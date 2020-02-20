@@ -35,7 +35,7 @@ setup(name='dbmap',
           'matplotlib>=2.2.2',
           'seaborn>=0.8.1',
           'tzlocal',
-          'scanpy'
+          'scanpy',
           'scikit-build'
       ],
       )

@@ -4,6 +4,12 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
 
 # Installation and dependencies
 
+   Prior to installing dbMAP, make sure you have scikit-build and cmake available in your system. These are required for installation.
+   ```
+     $> sudo apt-get install cmake
+     $> pip3 install scikit-build
+```
+   
    dbMAP has been implemented in Python3, and can be installed using:
 ```
      $> git clone git://github.com/labcellsign/py_dbMAP.git

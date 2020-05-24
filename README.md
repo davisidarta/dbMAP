@@ -12,8 +12,8 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
    
    dbMAP has been implemented in Python3, and can be installed using:
 ```
-     $> git clone git://github.com/labcellsign/py_dbMAP.git
-     $> cd py_dbMAP
+     $> git clone git://github.com/davisidarta/dbMAP.git
+     $> cd dbMAP
      $> sudo -H pip3 install .
 ```
    dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands. dbMAP was developed and tested in Unix environments and can also be used in Windows machines.
@@ -119,7 +119,7 @@ dbMAP can be easily used in R with the R library reticulate (https://rstudio.git
 dbMAP is powered by algorithms initially proposed by Manu Setty et al and Leland McInnes. Standing on the shoulder of giants, we kindly ask that you cite the following if you use dbMAP for your work:
 
 ```
-Diffusion-based Manifold Approximation and Projection (dbMAP): a comprehensive, generalized and computationally efficient approach for single-cell data visualization. Submitted to double-blind peer review.
+Sidarta-Oliveira, Davi and Velloso, Licio, Comprehensive Visualization of High-Dimensional Single-Cell Data With Diffusion-Based Manifold Approximation and Projection (dbMAP). CELL-REPORTS-D-20-01731. Available at SSRN: https://ssrn.com/abstract=3582067 or http://dx.doi.org/10.2139/ssrn.3582067
 
 Characterization of cell fate probabilities in single-cell data with Palantir. Setty et al., Nature Biotechnology 2019.
 

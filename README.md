@@ -41,17 +41,17 @@ n_samples, n_features = X.shape
 
 
 #Runs Diffusion Maps to approximate the Laplace-Beltrami operator
-diff = dbmap.diffusion.Run_Diffusion(df, force_sparse=False, n_components= 100, knn= 30)
+diff = dbmap.diffusion.diffuse(df, force_sparse=False, n_components= 100, knn= 30)
 evals = diff['EigenValues'].ravel()
 plt.plot(evals) 
 plt.show() #Select the most significant eigenvectors to use in dbMAP by evaluating an elbow plot. 
 plt.clf()
 
 #If a number of eigenvector is not chosen, Multiscale() estimates an adequate number using the eigen gap. 
-res = dbmap.diffusion.Multiscale(diff = diff)  
+res = dbmap.multiscale.Multiscale(diff = diff)  
 
 #Visualize the high-dimensional, multiscaled diffusion map results with UMAP as the final step of dbMAP.
-embedding = dbmap.dbmap.Run_dbMAP(res = res, min_dist = 0.05, n_neighbors = 30)
+embedding = dbmap.map.map(res = res, min_dist = 0.05, n_neighbors = 30)
 embedding_plot(embedding, 'dbMAP visualization of the Digits dataset')
 plt.show()
 plt.savefig('dbMAP_digits_numbers.png', dpi = 600)
@@ -90,9 +90,9 @@ dbMAP can be easily used in R with the R library reticulate (https://rstudio.git
   data <- data$tocoo()
    
   #Run dbMAP
-  diff <- dbmap$diffusion$Run_Diffusion(data)
-  res <- dbmap$diffusion$Multiscale(diff)
-  emb <- dbmap$dbmap$Run_dbMAP(res)
+  diff <- dbmap$diffusion$diffuse(data)
+  res <- dbmap$multiscale$Multiscale(diff)
+  emb <- dbmap$map$map(res)
   
   db <- as.matrix(res)
   embedding <- as.matrix(emb)

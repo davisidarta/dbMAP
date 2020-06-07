@@ -5,6 +5,7 @@ Utility functions
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.offsetbox as offsetbox
 
 def embedding_plot(X, y, title, show_images = True):
     x_min, x_max = np.min(X, axis=0), np.max(X, axis=0)

@@ -52,7 +52,7 @@ res = dbmap.multiscale.Multiscale(diff = diff)
 
 #Visualize the high-dimensional, multiscaled diffusion map results with UMAP as the final step of dbMAP.
 embedding = dbmap.map.map(res = res, min_dist = 0.05, n_neighbors = 30)
-embedding_plot(embedding, 'dbMAP visualization of the Digits dataset')
+embedding_plot(embedding, y, 'dbMAP visualization of the Digits dataset')
 plt.show()
 plt.savefig('dbMAP_digits_numbers.png', dpi = 600)
    

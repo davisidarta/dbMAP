@@ -10,7 +10,7 @@ def embedding_plot(X, y, title, show_images = True):
     x_min, x_max = np.min(X, axis=0), np.max(X, axis=0)
     X = (X - x_min) / (x_max - x_min)
     # X is the embedding, y are the targets
-    plt.figure(figsize= [10000,10000], dpi = 6000)
+    plt.figure(figsize= [800,800], dpi = 600)
     ax = plt.subplot()
     sc = ax.scatter(X[:,0], X[:,1], lw=0, s=5, c=y)
     

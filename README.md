@@ -17,9 +17,8 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
    
    dbMAP has been implemented in Python3, and can be installed using:
 ```
-     $> git clone git://github.com/davisidarta/dbMAP.git
-     $> cd dbMAP
-     $> sudo -H pip3 install .
+     $> pip3 install dbmap
+
 ```
    dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands. dbMAP was developed and tested in Unix environments and can also be used in Windows machines.
 
@@ -28,7 +27,7 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
   dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. It takes three steps to run dbMAP on a high-dimensional matrix (such as a gene expression matrix):
         
   ```
-  from sklearn.datasets import load_digits
+from sklearn.datasets import load_digits
 import matplotlib.pyplot as plt
 import matplotlib.offsetbox as offsetbox
 import pandas as pd

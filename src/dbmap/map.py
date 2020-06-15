@@ -12,9 +12,9 @@ def map(res, n_neighbors = 30, n_components = 2, learning_rate = 1.0, min_dist =
 	:param learning_rate: The initial learning rate for the embedding optimization.
 	:return: dbMAP embeddings.
 	"""
-	embedd = umap.UMAP(n_neighbors = n_neighbors, n_components = n_components, learning_rate = learning_rate, min_dist = min_dist, spread = spread).fit_transform(res)
+	embed = umap.UMAP(n_neighbors = n_neighbors, n_components = n_components, learning_rate = learning_rate, min_dist = min_dist, spread = spread).fit_transform(res)
   
-	return embedd
+	return embed
 
 
 

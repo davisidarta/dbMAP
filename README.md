@@ -15,12 +15,7 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
      $> pip3 install scikit-build
 ```
    
-   dbMAP has been implemented in Python3, and can be installed using:
-```
-     $> pip3 install dbmap
-
-```
-   dbMAP depends on a handful of Python3 packages available in PyPi, which are listed in setup.py and automatically installed using the above commands. dbMAP was developed and tested in Unix environments and can also be used in Windows machines.
+   dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
 
 # Usage - Python
 

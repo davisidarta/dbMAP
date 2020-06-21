@@ -112,13 +112,12 @@ def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jo
              during Multiscaling.
     """
     print('Converting input to sparse. Determing nearest neighbor graph...')
-    if force_sparse == True:
-        data = data.tocsr()
-        print('Converting input to sparse for efficiency. Determing nearest neighbor graph...')
+    if sparse == True:
+        data = data.todense()
+        print('Sparse input - optimizing for sparse data efficiency. Determing nearest neighbor graph...')
     else:
         print('Dense input. Determing nearest neighbor graph...')
     
-    data = data.todense()
     N = data.shape[0]
 
     if ann == True:

@@ -35,7 +35,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.n_jobs = n_jobs
 
     def fit(self, data):
-        self.n_samples_fit_ = X.shape[0]
+        self.n_samples_fit_ = data.shape[0]
 
         # see more metric in the manual
         # https://github.com/nmslib/nmslib/tree/master/manual

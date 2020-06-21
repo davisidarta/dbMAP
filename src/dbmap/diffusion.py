@@ -62,7 +62,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         # neighbor, one extra neighbor will be computed.
         n_neighbors = self.n_neighbors + 1
 
-        results = self.nmslib_.knnQueryBatch(X, k=n_neighbors,
+        results = self.nmslib_.knnQueryBatch(data, k=n_neighbors,
                                              num_threads=self.n_jobs)
         indices, distances = zip(*results)
         indices, distances = np.vstack(indices), np.vstack(distances)
@@ -78,16 +78,16 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         return kneighbors_graph
 
-    def test_transformers(self, X):
+    def test_transformers(self, data):
         """Test that NMSlibTransformer and KNeighborsTransformer give same results
         """
         X = np.random.RandomState(42).randn(10, 2)
 
         knn = KNeighborsTransformer()
-        Xt0 = knn.fit_transform(X)
+        Xt0 = knn.fit_transform(data)
 
         nms = NMSlibTransformer()
-        Xt1 = nms.fit_transform(X)
+        Xt1 = nms.fit_transform(data)
 
         assert_array_almost_equal(Xt0.toarray(), Xt1.toarray(), decimal=5)
 

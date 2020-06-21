@@ -51,7 +51,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         }[self.metric]
 
         self.nmslib_ = nmslib.init(method=self.method, space=space)
-        self.nmslib_.addDataPointBatch(X)
+        self.nmslib_.addDataPointBatch(data)
         self.nmslib_.createIndex()
         return self
 

@@ -49,7 +49,10 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             'jaccard' : 'bit_jaccard',
             'jaccard_sparse' : 'jaccard_sparse',
         }[self.metric]
-        self.nmslib_ = nmslib.init(method=self.method, space=space)
+        self.nmslib_ = nmslib.init(method=self.method, 
+                                   space=space, 
+                                   data_type=nmslib.DataType.SPARSE_VECTOR, 
+                                   dtype = nmslib.DistType.FLOAT)
         self.nmslib_.addDataPointBatch(data)
         self.nmslib_.createIndex()
         return self
@@ -90,7 +93,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         assert_array_almost_equal(Xt0.toarray(), Xt1.toarray(), decimal=5)
 
-def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jobs=-1, alpha=1, sparse=True):
+def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jobs=-1, alpha=1, force_sparse=True):
     """Runs Diffusion maps using an adaptation of the adaptive anisotropic kernel proposed by Setty et al,
         Nature Biotechnology 2019.
     :param data: Data matrix to diffuse from. Either a sparse .coo or a dense pandas dataframe.
@@ -105,13 +108,14 @@ def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jo
     :param alpha: Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
            Defaults to 1, which is suitable for normalized data.
     :param n_jobs: Number of threads to use in calculations. Defaults to all but one.
-    :param sparse: Whether input data is in a sparse format (i.e., csr or coo). Defaults to True.
-    :return: Diffusion components, associated eigenvalues and suggested number of resulting components to use
+    :param force_sparse: Whether to convert input data to a sparse format so as to accelerate computation (i.e., csr or coo). 
+           Defaults to True.
+    :return: Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of resulting components to use
              during Multiscaling.
     """
     print('Converting input to sparse. Determing nearest neighbor graph...')
-    if sparse == True:
-        data = data.toarray()
+    if force_sparse == True:
+        data = data.tocsr()
         print('Sparse input - optimizing for sparse data efficiency. Determing nearest neighbor graph...')
     else:
         print('Dense input. Determing nearest neighbor graph...')

@@ -90,7 +90,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         Xt1 = nms.fit_transform(X)
 
         assert_array_almost_equal(Xt0.toarray(), Xt1.toarray(), decimal=5)
-© 2020 GitHub, Inc.
 
 def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jobs=-1, alpha=1, force_sparse=True):
     """Runs Diffusion maps using an adaptation of the adaptive anisotropic kernel proposed by Setty et al,

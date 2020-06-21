@@ -1,24 +1,30 @@
 import numpy as np
 import pandas as pd
-import os.path
-import fcsparser
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
-import tables
+import hnswlib
+from . import ann
 
-
-def diffuse(data, n_components=50, knn=30, n_jobs=-1, alpha=1, knn_dist = 'euclidean', force_sparse=True):
-    """\
-    Runs Diffusion maps using an adaptation of the adaptive anisotropic kernel proposed by Setty et al, Nature Biotechnology 2019.
+def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jobs=-1, alpha=1, force_sparse=True):
+    """Runs Diffusion maps using an adaptation of the adaptive anisotropic kernel proposed by Setty et al,
+        Nature Biotechnology 2019.
     :param data: Data matrix to diffuse from. Either a sparse .coo or a dense pandas dataframe.
-    :param n_components: Number of diffusion components to compute. Defaults to 50. We suggest larger values if analyzing more than 10,000 cells.
-    :param knn: Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell distance of its median neighbor.
+    :param n_components: Number of diffusion components to compute. Defaults to 50. We suggest larger values if
+           analyzing more than 10,000 cells.
+    :param knn: Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
+           distance of its median neighbor.
+    :param knn_dist: Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
+           different metrics, such as 'cosine' and 'jaccard'. The 'hamming' distance is also available for string
+           vectors.
+    :param ann: Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
+    :param alpha: Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
+           Defaults to 1, which is suitable for normalized data.
     :param n_jobs: Number of threads to use in calculations. Defaults to all but one.
-    :param alpha: Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution. Defaults to 1.
-    :param knn_dist: Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore different metrics.
-    :param force_sparse: Whether to convert input data (coo or dataframe) to a csr sparse format for speeding calculations. Defaults to True.
-    :return: Diffusion components, associated eigenvalues and suggested number of resulting components to use during Multiscaling.
+    :param force_sparse: Whether to convert input data (coo or dataframe) to a csr sparse format for speeding
+           calculations. Defaults to True.
+    :return: Diffusion components, associated eigenvalues and suggested number of resulting components to use
+             during Multiscaling.
     """
     print('Converting input to sparse. Determing nearest neighbor graph...')
     if force_sparse == True:
@@ -28,21 +34,47 @@ def diffuse(data, n_components=50, knn=30, n_jobs=-1, alpha=1, knn_dist = 'eucli
         print('Dense input. Determing nearest neighbor graph...')
 
     N = data.shape[0]
-    # Construct a k-nearest-neighbors graph
-    nbrs = NearestNeighbors(n_neighbors=int(knn), metric=knn_dist, n_jobs=n_jobs).fit(data)
-    kNN = nbrs.kneighbors_graph(data, mode='distance')
-    # Adaptive k: distance to cell median nearest neighbors, used for kernel normalizaiton
-    adaptive_k = int(np.floor(knn / 2))
-    nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric=knn_dist, n_jobs=n_jobs).fit(data)
-    adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
-    adaptive_std = np.ravel(adaptive_std.todense())
 
-    # Distance metrics
-    x, y, dists = find(kNN)  # k-nearest-neighbor distances
+    if ann == True:
 
-    # X, y specific stds
-    dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
-    W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])  # Normalized distances
+        # Construct an approximate k-nearest-neighbors graph
+        anbrs = NMSlibTransformer(n_neighbors=30, metric='euclidean', method='sw-graph', n_jobs=4)
+        anbrs = anbrs.fit(data)
+        akNN = anbrs.transform(data)
+
+        # Adaptive k
+        adaptive_k = int(np.floor(knn / 3))
+        adaptive_std = np.zeros(N)
+
+        for i in np.arange(len(adaptive_std)):
+            adaptive_std[i] = np.sort(akNN.data[akNN.indptr[i]: akNN.indptr[i + 1]])[
+                adaptive_k - 1
+                ]
+
+        # Distance metrics
+        x, y, dists = find(akNN)  # k-nearest-neighbor distances
+
+        # X, y specific stds
+        dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+        W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])  # Normalized distances
+
+    else:
+        # Construct a k-nearest-neighbors graph
+        nbrs = NearestNeighbors(n_neighbors=int(knn), metric=knn_dist, n_jobs=n_jobs).fit(data)
+        kNN = nbrs.kneighbors_graph(data, mode='distance')
+
+        # Adaptive k: distance to cell median nearest neighbors, used for kernel normalization.
+        adaptive_k = int(np.floor(knn / 2))
+        nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=n_jobs).fit(data)
+        adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
+        adaptive_std = np.ravel(adaptive_std.todense())
+
+        # Distance metrics
+        x, y, dists = find(kNN)  # k-nearest-neighbor distances
+
+        # X, y specific stds
+        dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+        W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])  # Normalized distances
 
     # Kernel construction
     kernel = W + W.T

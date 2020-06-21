@@ -34,7 +34,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.metric = metric
         self.n_jobs = n_jobs
 
-    def fit(self, X):
+    def fit(self, data):
         self.n_samples_fit_ = X.shape[0]
 
         # see more metric in the manual
@@ -55,8 +55,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.nmslib_.createIndex()
         return self
 
-    def transform(self, X):
-        n_samples_transform = X.shape[0]
+    def transform(self, data):
+        n_samples_transform = data.shape[0]
 
         # For compatibility reasons, as each sample is considered as its own
         # neighbor, one extra neighbor will be computed.

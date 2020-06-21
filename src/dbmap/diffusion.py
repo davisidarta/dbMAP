@@ -120,46 +120,36 @@ def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jo
     N = data.shape[0]
 
     if ann == True:
-
         # Construct an approximate k-nearest-neighbors graph
-        anbrs = NMSlibTransformer(n_neighbors=30, metric='euclidean', method='sw-graph', n_jobs=4)
+        anbrs = NMSlibTransformer(n_neighbors=knn, metric=knn_dist, method='sw-graph', n_jobs=n_jobs)
         anbrs = anbrs.fit(data)
         akNN = anbrs.transform(data)
-
         # Adaptive k
         adaptive_k = int(np.floor(knn / 3))
         adaptive_std = np.zeros(N)
-
         for i in np.arange(len(adaptive_std)):
             adaptive_std[i] = np.sort(akNN.data[akNN.indptr[i]: akNN.indptr[i + 1]])[
                 adaptive_k - 1
                 ]
-
         # Distance metrics
         x, y, dists = find(akNN)  # k-nearest-neighbor distances
-
         # X, y specific stds
         dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
         W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])  # Normalized distances
-
     else:
         # Construct a k-nearest-neighbors graph
         nbrs = NearestNeighbors(n_neighbors=int(knn), metric=knn_dist, n_jobs=n_jobs).fit(data)
         kNN = nbrs.kneighbors_graph(data, mode='distance')
-
         # Adaptive k: distance to cell median nearest neighbors, used for kernel normalization.
         adaptive_k = int(np.floor(knn / 2))
         nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=n_jobs).fit(data)
         adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
         adaptive_std = np.ravel(adaptive_std.todense())
-
         # Distance metrics
         x, y, dists = find(kNN)  # k-nearest-neighbor distances
-
         # X, y specific stds
         dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
         W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])  # Normalized distances
-
     # Kernel construction
     kernel = W + W.T
     # Diffusion through Markov chain

@@ -49,7 +49,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             'jaccard' : 'bit_jaccard',
             'jaccard_sparse' : 'jaccard_sparse',
         }[self.metric]
-
         self.nmslib_ = nmslib.init(method=self.method, space=space)
         self.nmslib_.addDataPointBatch(data)
         self.nmslib_.createIndex()
@@ -111,8 +110,8 @@ def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jo
              during Multiscaling.
     """
     print('Converting input to sparse. Determing nearest neighbor graph...')
-    if force_sparse == True:
-        data = data.tocsr()
+    if sparse == True:
+        data = data.toarray()
         print('Sparse input - optimizing for sparse data efficiency. Determing nearest neighbor graph...')
     else:
         print('Dense input. Determing nearest neighbor graph...')

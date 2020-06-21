@@ -117,7 +117,8 @@ def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jo
         print('Converting input to sparse for efficiency. Determing nearest neighbor graph...')
     else:
         print('Dense input. Determing nearest neighbor graph...')
-
+    
+    data = data.todense()
     N = data.shape[0]
 
     if ann == True:
@@ -193,7 +194,6 @@ def diffuse(data, n_components=100, knn=30, knn_dist='euclidean', ann=True, n_jo
     res = {'T': T, 'EigenVectors': V, 'EigenValues': D}
     res['EigenVectors'] = pd.DataFrame(res['EigenVectors'])
     if not issparse(data):
-        res['EigenVectors'].index = data.index
         res['EigenValues'] = pd.Series(res['EigenValues'])
         res['kernel'] = kernel
 

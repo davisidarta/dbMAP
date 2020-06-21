@@ -11,7 +11,7 @@ import sys
 try:
     import nmslib
 except ImportError:
-    print("The package 'nmslib' is required to run this example.")
+    print("The package 'nmslib' is required to run accelerated dbMAP")
     sys.exit()
 
 import numpy as np

@@ -1,23 +1,12 @@
 import umap
-import numpy as np
-import pandas as pd
-from sklearn.neighbors import NearestNeighbors
-from scipy.sparse import csr_matrix, find, issparse
-from scipy.sparse.linalg import eigs
-import numexpr as ne
-import time
 import sys
-from scipy.sparse import csr_matrix
 try:
     import nmslib
 except ImportError:
     print("The package 'nmslib' is required to run accelerated dbMAP")
     sys.exit()
-import numpy as np
-from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.neighbors import NearestNeighbors
-from sklearn.model_selection import train_test_split
+
 
 print(__doc__)
 
@@ -25,20 +14,20 @@ class dbMAP(TransformerMixin, BaseEstimator):
     """
     Layouts diffusion structure with UMAP to achieve dbMAP dimensional reduction. This class refers to the lower
     dimensional representation of diffusion components obtained through an adaptive diffusion maps algorithm initially
-    proposed by [Setty18]. Alternatively, other diffusion approaches can be used, such as                               
+    proposed by [Setty18]. Alternatively, other diffusion approaches can be used, such as
     # To do: Fazer a adaptacao p outros algoritmos de diff maps
     :param n_components: int (optional, default 2). The dimension of the space to embed into. This defaults to 2 to
     provide easy visualization, but can reasonably be set to any integer value in the range 2 to K, K being the number
     of samples or diffusion components to embedd.
-    :param n_neighbors: The size of local neighborhood (in terms of number of neighboring sample points) used for 
-    manifold approximation. Larger values result in more global views of the manifold, while smaller values result in 
+    :param n_neighbors: The size of local neighborhood (in terms of number of neighboring sample points) used for
+    manifold approximation. Larger values result in more global views of the manifold, while smaller values result in
     more local data being preserved. In general values should be in the range 2 to 100.
     :param n_jobs: Number of threads to use in calculations. Defaults to all but one.
-    :param min_dist: The effective minimum distance between embedded points. Smaller values will result in a more 
-    clustered/clumped embedding where nearby points on the manifold are drawn closer together, while larger values will 
-    result on a more even dispersal of points. The value should be set relative to the spread value, which determines 
+    :param min_dist: The effective minimum distance between embedded points. Smaller values will result in a more
+    clustered/clumped embedding where nearby points on the manifold are drawn closer together, while larger values will
+    result on a more even dispersal of points. The value should be set relative to the spread value, which determines
     the scale at which embedded points will be spread out.
-    :param spread: The effective scale of embedded points. In combination with min_dist this determines how 
+    :param spread: The effective scale of embedded points. In combination with min_dist this determines how
     clustered/clumped the embedded points are.
     :param learning_rate: The initial learning rate for the embedding optimization.
     :return: dbMAP embeddings.

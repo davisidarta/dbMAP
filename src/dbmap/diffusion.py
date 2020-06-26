@@ -1,12 +1,18 @@
+#####################################
+# Author: Davi Sidarta-Oliveira
+# School of Medical Sciences,University of Campinas,Brazil
+# contact: davisidarta@gmail.com
+######################################
 import time
 import sys
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix, find, issparse
-from scipy.sparse.linalg import eigs, eigsh
+from scipy.sparse.linalg import eigs
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import train_test_split
+from kneed import KneeLocator
 
 try:
     import nmslib
@@ -18,7 +24,16 @@ print(__doc__)
 
 
 class NMSlibTransformer(TransformerMixin, BaseEstimator):
-    """Wrapper for using nmslib as sklearn's KNeighborsTransformer"""
+    """
+    Wrapper for using nmslib as sklearn's KNeighborsTransformer. This implements
+    an escalable approximate k-nearest-neighbors graph on spaces defined by nmslib.
+    Read more about nmslib and its various available metrics at
+    https://github.com/nmslib/nmslib.
+
+
+
+
+    """
 
     def __init__(self,
                  n_neighbors=30,
@@ -29,6 +44,19 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                  efC=100,
                  efS=100,
                  p=None):
+        """
+        Initialize neighbour search parameters.
+        :param n_neighbors: number of nearest-neighbors to look for. In practice,
+        this should be considered the average neighborhood size and can vary depending
+        on your number of samples and data intrinsic dimensionality. Reasonable values
+        range from 5 to 100. Smaller values tend to lead to increased graph structure
+        resolution, but users should beware that a too low value may render granulated and vaguely
+        defined neighborhoods that arise as an artifact of downsampling. Larger values
+        will al
+
+         Defaults to 30.
+
+        """
 
         self.n_neighbors = n_neighbors
         self.method = method
@@ -39,6 +67,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.efS = efS
         self.p = p
         self.space = str = {
+            'sqeuclidean': 'l2',
             'euclidean': 'l2',
             'euclidean_sparse': 'l2_sparse',
             'cosine': 'cosinesimil',
@@ -55,7 +84,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             'jaccard_sparse': 'jaccard_sparse',
             'jansen-shan': 'jsmetrfastapprox'
         }[self.metric]
-
 
     def fit(self, data):
         # see more metrics in the manual
@@ -166,6 +194,66 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         print('kNN recall %f' % recall)
 
 
+class multiscale(TransformerMixin, BaseEstimator):
+
+    def __init__(self,
+                 n_eigs=None,
+                 sensitivity=1,
+                 plot=False
+                 ):
+        """Determine multi scale space of the data
+        :param n_eigs: Number of eigen vectors to use. If None specified, the number
+               of eigen vectors will be determined using eigen gap identification.
+        :param sensitivity: sensitivity of eigen gap identification. Defaults to 1.
+        :param plot: Whether to plot or not the scree plot of information entropy.
+        :return: Multi scaled data matrix
+        """
+        self.n_eigs = n_eigs
+        self.sensitivity = sensitivity
+        self.plot = plot
+
+    def fit(self, res):
+        if self.n_eigs != None:
+            if self.plot == True:
+                ev = res['EigenValues']
+                x = range(1, len(ev)+1)
+                y = ev
+                kneedle = KneeLocator(x, y, S=self.sensitivity, curve='convex', direction='decreasing')
+                kneedle.plot_knee()
+
+        if self.n_eigs == None:
+            ev = res['EigenValues']
+            x = range(1, len(ev)+1)
+            y = ev
+
+            kneedle = KneeLocator(x, y, S=self.sensitivity, curve='convex', direction='decreasing')
+            self.n_eigs = round(kneedle.knee)
+
+            print('Automatically selected and multiscaled ' + str(round(kneedle.knee)) +
+                  ' diffusion components.')
+
+            if self.plot == True:
+                kneedle.plot_knee()
+
+        return self
+
+    def transform(self, res):
+
+        if self.n_eigs == None:
+            vals = np.ravel(res["EigenValues"])
+            self.n_eigs = np.argsort(vals[: (len(vals) - 1)] - vals[1:])[-1] + 1
+            if self.n_eigs < 3:
+                self.n_eigs = np.argsort(vals[: (len(vals) - 1)] - vals[1:])[-2] + 2
+
+        # Scale the data
+        use_eigs = list(range(1, self.n_eigs))
+        eig_vals = np.ravel(res["EigenValues"][use_eigs])
+        mms = res["EigenVectors"].values[:, use_eigs] * (eig_vals / (1 - eig_vals))
+        mms = pd.DataFrame(mms)
+
+        return mms
+
+
 class Diffusor(TransformerMixin, BaseEstimator):
     """Sklearn estimator for using fast anisotropic diffusion with an anisotropic
     adaptive algorithm as proposed by Setty et al, 2018, and optimized by Sidarta-Oliveira, 2020.
@@ -211,13 +299,16 @@ class Diffusor(TransformerMixin, BaseEstimator):
         self.efS = efS
         self.knn_dist = knn_dist
 
-    def fit_transform(self, data):
+    def fit_transform(self, data,
+                      plot_knee=False):
         """Effectively computes on data.
         :param data: input data. Takes in numpy arrays and scipy csr sparse matrices.
         Please use with sparse data for top performance. You can adjust a series of
         parameters that can make the process faster and more informational depending
         on your dataset. Read more at https://github.com/davisidarta/dbmap
         """
+        self.plot_knee = plot_knee
+
         start = time.time()
         N = data.shape[0]
         if self.ann == True:
@@ -291,22 +382,16 @@ class Diffusor(TransformerMixin, BaseEstimator):
         res['EigenVectors'] = pd.DataFrame(res['EigenVectors'])
         if not issparse(data):
             res['EigenValues'] = pd.Series(res['EigenValues'])
-            res['kernel'] = kernel
+        res["EigenValues"] = pd.Series(res["EigenValues"])
+        res['kernel'] = kernel
 
-        # Define a number of components to use
-        vals = np.ravel(res['EigenValues'])
-        n_eigs = np.argsort(vals[:(len(vals) - 1)] - vals[1:])[-1] + 1
-
-        # Scale the components
-        use_eigs = list(range(1, n_eigs))
-        eig_vals = np.ravel(res['EigenValues'][use_eigs])
-        data = res['EigenVectors'].values[:, use_eigs] * (eig_vals / (1 - eig_vals))
-        data = pd.DataFrame(data, index=res['EigenVectors'].index)
-        res['StructureComponents'] = data
+        #multi = multiscale(n_eigs=None, plot=self.plot_knee)
+        #mms = multi.fit(res)
+        #mms = mms.transform(res)
+        #res['StructureComponents'] = mms
 
         end = time.time()
         print('Total computation time=%f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
               (end - start, float(end - start) / N, self.n_jobs * float(end - start) / N))
 
         return res
-

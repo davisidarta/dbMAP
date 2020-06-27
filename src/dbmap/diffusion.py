@@ -10,6 +10,8 @@ from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.neighbors import NearestNeighbors
+from . import ann
+from . import multiscale
 
 print(__doc__)
 

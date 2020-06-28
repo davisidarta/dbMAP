@@ -15,22 +15,34 @@ from . import multiscale
 
 print(__doc__)
 
-class Diffusor(TransformerMixin, BaseEstimator):
-    """Sklearn estimator for using fast anisotropic diffusion with an anisotropic
+class Diffusor(TransformerMixin):
+    """
+    Sklearn estimator for using fast anisotropic diffusion with an anisotropic
     adaptive algorithm as proposed by Setty et al, 2018, and optimized by Sidarta-Oliveira, 2020.
-    :param n_components: Number of diffusion components to compute. Defaults to 50. We suggest larger values if
-           analyzing more than 10,000 cells.
-    :param n_neighbors: Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
-           distance of its median neighbor.
-    :param knn_dist: Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
-           different metrics, such as 'cosine' and 'jaccard'. The 'hamming' and 'jaccard' distances are also available for string
-           vectors.
-    :param ann: Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
-    :param alpha: Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
-           Defaults to 1, which is suitable for normalized data.
-    :param n_jobs: Number of threads to use in calculations. Defaults to all but one.
-    :return: Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of resulting components to use
-             during Multiscaling.
+
+    Parameters
+    ----------
+    n_components : Number of diffusion components to compute. Defaults to 50. We suggest larger values if
+                   analyzing more than 10,000 cells.
+
+    n_neighbors : Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
+                  distance of its median neighbor.
+
+    knn_dist : Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
+               different metrics, such as 'cosine' and 'jaccard'. The 'hamming' and 'jaccard' distances are also available
+               for string vectors.
+
+    ann : Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
+
+    alpha : Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
+            Defaults to 1, which is suitable for normalized data.
+
+    n_jobs : Number of threads to use in calculations. Defaults to all but one.
+
+    sensitivity : Sensitivity to select eigenvectors if diff_normalization is set to 'knee'. Useful when dealing wit
+
+    :return: Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
+             resulting components to use during Multiscaling.
     Examples
     -------------
     >>>import dbmap
@@ -41,14 +53,15 @@ class Diffusor(TransformerMixin, BaseEstimator):
                  n_components=100,
                  n_neighbors=30,
                  alpha=1,
-                 n_jobs=-2,
+                 n_jobs=10,
                  ann=True,
                  ann_dist='angular_sparse',
                  M=30,
                  efC=100,
                  efS=100,
                  knn_dist='euclidean',
-                 sensitivity = 2
+                 kernel_use='sidarta',
+                 sensitivity=1
                  ):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
@@ -60,22 +73,22 @@ class Diffusor(TransformerMixin, BaseEstimator):
         self.efC = efC
         self.efS = efS
         self.knn_dist = knn_dist
+        self.kernel_use = kernel_use
         self.sensitivity = sensitivity
 
-
-    def fit_transform(self, data,
-                      plot_knee=False):
+    def fit(self, data, plot_knee=False):
         """Effectively computes on data.
+        :param plot_knee: Whether to plot the scree plot of diffusion eigenvalues.
         :param data: input data. Takes in numpy arrays and scipy csr sparse matrices.
         Please use with sparse data for top performance. You can adjust a series of
         parameters that can make the process faster and more informational depending
         on your dataset. Read more at https://github.com/davisidarta/dbmap
         """
         self.plot_knee = plot_knee
+        self.start_time = time.time()
 
-        start = time.time()
-        N = data.shape[0]
-        if self.ann == True:
+        self.N = data.shape[0]
+        if self.ann:
             # Construct an approximate k-nearest-neighbors graph
             anbrs = NMSlibTransformer(n_neighbors=self.n_neighbors,
                                       metric=self.ann_dist,
@@ -86,48 +99,73 @@ class Diffusor(TransformerMixin, BaseEstimator):
                                       efS=self.efS)
             anbrs = anbrs.fit(data)
             akNN = anbrs.transform(data)
-            # Adaptive k
+            # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
             adaptive_k = int(np.floor(self.n_neighbors / 2))
-            adaptive_std = np.zeros(N)
+            adaptive_std = np.zeros(self.N)
             for i in np.arange(len(adaptive_std)):
                 adaptive_std[i] = np.sort(akNN.data[akNN.indptr[i]: akNN.indptr[i + 1]])[
                     adaptive_k - 1
                     ]
             # Distance metrics
             x, y, dists = find(akNN)  # k-nearest-neighbor distances
-            # X, y specific stds
-            dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
-            W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])  # Normalized distances
-        else:
 
+            if self.kernel_use == 'setty':
+                # X, y specific stds
+                dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+
+            if self.kernel_use == 'sidarta':
+                # X, y specific stds
+                dists = dists - (dists / adaptive_std[x])   # Normalize by normalized contribution to neighborhood size.
+
+            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+
+
+
+        else:
             # Construct a k-nearest-neighbors graph
             nbrs = NearestNeighbors(n_neighbors=int(self.n_neighbors), metric=self.knn_dist, n_jobs=self.n_jobs).fit(
                 data)
             knn = nbrs.kneighbors_graph(data, mode='distance')
-            # Adaptive k: distance to cell median nearest neighbors, used for kernel normalization.
+            # Normalize distances by the distance of median nearest neighbor to account for neighborhood size.
             adaptive_k = int(np.floor(self.n_neighbors / 2))
             nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=self.n_jobs).fit(data)
             adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
             adaptive_std = np.ravel(adaptive_std.todense())
             # Distance metrics
             x, y, dists = find(knn)  # k-nearest-neighbor distances
-            # X, y specific stds
-            dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
-            W = csr_matrix((np.exp(-dists), (x, y)), shape=[N, N])  # Normalized distances
+
+            if self.kernel_use == 'setty':
+                # X, y specific stds
+                dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+
+            if self.kernel_use == 'sidarta':
+                # X, y specific stds
+                dists = dists - (dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
+
+            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+
         # Kernel construction
         kernel = W + W.T
+        self.kernel = kernel
+
+        return self
+
+    def transform(self, data, n_eigs=None):
+        self.n_eigs = n_eigs
+
         # Diffusion through Markov chain
-        D = np.ravel(kernel.sum(axis=1))
+        D = np.ravel(self.kernel.sum(axis=1))
         if self.alpha > 0:
             # L_alpha
             D[D != 0] = D[D != 0] ** (-self.alpha)
-            mat = csr_matrix((D, (range(N), range(N))), shape=[N, N])
-            kernel = mat.dot(kernel).dot(mat)
+            mat = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N])
+            kernel = mat.dot(self.kernel).dot(mat)
             D = np.ravel(kernel.sum(axis=1))
+
         D[D != 0] = 1 / D[D != 0]
 
         # Setting the diffusion operator
-        T = csr_matrix((D, (range(N), range(N))), shape=[N, N]).dot(kernel)
+        T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
 
         # Eigen value decomposition
         D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
@@ -142,20 +180,19 @@ class Diffusor(TransformerMixin, BaseEstimator):
             V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
         # Create the results dictionary
-        res = {'T': T, 'EigenVectors': V, 'EigenValues': D}
-        res['EigenVectors'] = pd.DataFrame(res['EigenVectors'])
+        self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
+        self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
         if not issparse(data):
-            res['EigenValues'] = pd.Series(res['EigenValues'])
-        res["EigenValues"] = pd.Series(res["EigenValues"])
-        res['kernel'] = kernel
+            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
+        self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale(n_eigs=None, plot=self.plot_knee, sensitivity=self.sensitivity)
-        mms = multi.fit(res)
-        mms = mms.transform(res)
-        res['StructureComponents'] = mms
+        multi = multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        mms = multi.fit(self.res)
+        mms = mms.transform(self.res)
+        self.res['StructureComponents'] = mms
 
         end = time.time()
-        print('Total computation time=%f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
-              (end - start, float(end - start) / N, self.n_jobs * float(end - start) / N))
+        print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
+              (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
-        return res
+        return self.res['StructureComponents']

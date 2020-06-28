@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from kneed import KneeLocator
 
+
 class multiscale(TransformerMixin, BaseEstimator):
 
     def __init__(self,

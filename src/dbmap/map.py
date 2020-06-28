@@ -1,16 +1,8 @@
+import time
 import umap
-import sys
-try:
-    import nmslib
-except ImportError:
-    print("The package 'nmslib' is required to run accelerated dbMAP")
-    sys.exit()
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin
 
-
-print(__doc__)
-
-class dbMAP(TransformerMixin, BaseEstimator):
+class Mapper(TransformerMixin):
     """
     Layouts diffusion structure with UMAP to achieve dbMAP dimensional reduction. This class refers to the lower
     dimensional representation of diffusion components obtained through an adaptive diffusion maps algorithm initially
@@ -38,10 +30,10 @@ class dbMAP(TransformerMixin, BaseEstimator):
                  metric='euclidean',
                  output_metric='euclidean',
                  n_epochs=None,
-                 learning_rate=1.0,
+                 learning_rate=1.5,
                  init='spectral',
-                 min_dist=0.1,
-                 spread=1.0,
+                 min_dist=0.6,
+                 spread=1.5,
                  low_memory=False,
                  set_op_mix_ratio=1.0,
                  local_connectivity=1.0,
@@ -79,7 +71,6 @@ class dbMAP(TransformerMixin, BaseEstimator):
         self.random_state = random_state
         self.angular_rp_forest = angular_rp_forest
         self.target_n_neighbors = target_n_neighbors
-
         self.target_metric = target_metric
         self.target_weight = target_weight
         self.transform_seed = transform_seed
@@ -87,30 +78,68 @@ class dbMAP(TransformerMixin, BaseEstimator):
         self.verbose = verbose
         self.unique = unique
 
-    def map(self,data):
-           simple_umap = umap.UMAP(n_components=self.n_components,
-                 metric=self.metric,
-                 output_metric=self.output_metric,
-                 n_epochs=self.n_epochs,
-                 learning_rate=self.learning_rate,
-                 init=self.init,
-                 min_dist=self.min_dist,
-                 spread=self.spread,
-                 low_memory=self.low_memory,
-                 set_op_mix_ratio=self.set_op_mix_ratio,
-                 local_connectivity=self.local_connectivity,
-                 repulsion_strength=self.repulsion_strength,
-                 negative_sample_rate=self.negative_sample_rate,
-                 transform_queue_size=self.transform_queue_size,
-                 a=self.a,
-                 b=self.b,
-                 random_state=self.random_state,
-                 angular_rp_forest=self.angular_rp_forest,
-                 target_n_neighbors=self.target_n_neighbors,
-                 target_metric=self.target_metric,
-                 target_weight=self.target_weight,
-                 transform_seed=self.transform_seed,
-                 force_approximation_algorithm=self.force_approximation_algorithm,
-                 verbose=self.verbose,
-                 unique=self.unique).fit_transform(data)
-           return simple_umap
+    def fit(self, data, y=0):
+        # 'y' defines a null variable for compatibility purposes only.
+
+        simple_umap = umap.UMAP(n_components=self.n_components,
+                                metric=self.metric,
+                                output_metric=self.output_metric,
+                                n_epochs=self.n_epochs,
+                                learning_rate=self.learning_rate,
+                                init=self.init,
+                                min_dist=self.min_dist,
+                                spread=self.spread,
+                                low_memory=self.low_memory,
+                                set_op_mix_ratio=self.set_op_mix_ratio,
+                                local_connectivity=self.local_connectivity,
+                                repulsion_strength=self.repulsion_strength,
+                                negative_sample_rate=self.negative_sample_rate,
+                                transform_queue_size=self.transform_queue_size,
+                                a=self.a,
+                                b=self.b,
+                                random_state=self.random_state,
+                                angular_rp_forest=self.angular_rp_forest,
+                                target_n_neighbors=self.target_n_neighbors,
+                                target_metric=self.target_metric,
+                                target_weight=self.target_weight,
+                                transform_seed=self.transform_seed,
+                                force_approximation_algorithm=self.force_approximation_algorithm,
+                                verbose=self.verbose,
+                                unique=self.unique).fit_transform(data)
+        return simple_umap
+
+    def fit_transform(self, data, y=0):
+        # 'y' defines a null variable for compatibility purposes only.
+        start_time = time.time()
+        N = data.shape[0]
+
+        simple_umap = umap.UMAP(n_components=self.n_components,
+                                metric=self.metric,
+                                output_metric=self.output_metric,
+                                n_epochs=self.n_epochs,
+                                learning_rate=self.learning_rate,
+                                init=self.init,
+                                min_dist=self.min_dist,
+                                spread=self.spread,
+                                low_memory=self.low_memory,
+                                set_op_mix_ratio=self.set_op_mix_ratio,
+                                local_connectivity=self.local_connectivity,
+                                repulsion_strength=self.repulsion_strength,
+                                negative_sample_rate=self.negative_sample_rate,
+                                transform_queue_size=self.transform_queue_size,
+                                a=self.a,
+                                b=self.b,
+                                random_state=self.random_state,
+                                angular_rp_forest=self.angular_rp_forest,
+                                target_n_neighbors=self.target_n_neighbors,
+                                target_metric=self.target_metric,
+                                target_weight=self.target_weight,
+                                transform_seed=self.transform_seed,
+                                force_approximation_algorithm=self.force_approximation_algorithm,
+                                verbose=self.verbose,
+                                unique=self.unique).fit_transform(data)
+        end = time.time()
+        print('Adapted UMAP Layout time = %f (sec), per sample=%f (sec)' %
+              (end - start_time, float(end - start_time) / N))
+
+        return simple_umap

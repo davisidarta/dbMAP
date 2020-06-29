@@ -186,7 +186,7 @@ class Diffusor(TransformerMixin):
             self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
         mms = multi.fit(self.res)
         mms = mms.transform(self.res)
         self.res['StructureComponents'] = mms

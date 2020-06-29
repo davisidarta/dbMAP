@@ -10,7 +10,7 @@ from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.neighbors import NearestNeighbors
-from . import NMSlibTransformer
+from . import ann
 from . import multiscale
 
 print(__doc__)
@@ -90,7 +90,7 @@ class Diffusor(TransformerMixin):
         self.N = data.shape[0]
         if self.ann:
             # Construct an approximate k-nearest-neighbors graph
-            anbrs = NMSlibTransformer(n_neighbors=self.n_neighbors,
+            anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
                                       metric=self.ann_dist,
                                       method='hnsw',
                                       n_jobs=self.n_jobs,

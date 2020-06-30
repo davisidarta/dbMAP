@@ -11,6 +11,10 @@ from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.neighbors import NearestNeighbors
+from . import ann
+from . import multiscale
+from . import utils
+
 
 print(__doc__)
 
@@ -103,7 +107,7 @@ class Diffusor(TransformerMixin):
         self.N = data.shape[0]
         if self.ann:
             # Construct an approximate k-nearest-neighbors graph
-            anbrs = NMSlibTransformer(n_neighbors=self.n_neighbors,
+            anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
                                       metric=self.ann_dist,
                                       method='hnsw',
                                       n_jobs=self.n_jobs,
@@ -111,27 +115,14 @@ class Diffusor(TransformerMixin):
                                       efC=self.efC,
                                       efS=self.efS)
             anbrs = anbrs.fit(data)
-            akNN = anbrs.transform(data)
+            knn = anbrs.transform(data)
             # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
             adaptive_k = int(np.floor(self.n_neighbors / 2))
             adaptive_std = np.zeros(self.N)
             for i in np.arange(len(adaptive_std)):
-                adaptive_std[i] = np.sort(akNN.data[akNN.indptr[i]: akNN.indptr[i + 1]])[
+                adaptive_std[i] = np.sort(knn.data[knn.indptr[i]: knn.indptr[i + 1]])[
                     adaptive_k - 1
                     ]
-            # Distance metrics
-            x, y, dists = find(akNN)  # k-nearest-neighbor distances
-
-            if self.kernel_use == 'setty':
-                # X, y specific stds
-                dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
-
-            if self.kernel_use == 'sidarta':
-                # X, y specific stds
-                dists = dists - (dists / adaptive_std[x])   # Normalize by normalized contribution to neighborhood size.
-
-            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
-
         else:
             # Construct a k-nearest-neighbors graph
             nbrs = NearestNeighbors(n_neighbors=int(self.n_neighbors), metric=self.knn_dist, n_jobs=self.n_jobs).fit(
@@ -142,18 +133,19 @@ class Diffusor(TransformerMixin):
             nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=self.n_jobs).fit(data)
             adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
             adaptive_std = np.ravel(adaptive_std.todense())
-            # Distance metrics
-            x, y, dists = find(knn)  # k-nearest-neighbor distances
 
-            if self.kernel_use == 'setty':
-                # X, y specific stds
-                dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+        # Distance metrics
+        x, y, dists = find(knn)  # k-nearest-neighbor distances
 
-            if self.kernel_use == 'sidarta':
-                # X, y specific stds
-                dists = dists - (dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
+        if self.kernel_use == 'setty':
+           # X, y specific stds
+           dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
 
-            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+        if self.kernel_use == 'sidarta':
+            # X, y specific stds
+            dists = dists - (dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
+
+        W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
         # Kernel construction
         kernel = W + W.T
@@ -197,7 +189,7 @@ class Diffusor(TransformerMixin):
             self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
         mms = multi.fit(self.res)
         mms = mms.transform(self.res)
         self.res['StructureComponents'] = mms
@@ -208,3 +200,118 @@ class Diffusor(TransformerMixin):
 
         return self.res['StructureComponents']
 
+    def ind_dist_grad(self, data, n_eigs=None):
+        """Effectively computes on data. Also returns the normalized diffusion distances,
+        indexes and gradient obtained by approximating the Laplace-Beltrami operator.
+        :param plot_knee: Whether to plot the scree plot of diffusion eigenvalues.
+        :param data: input data. Takes in numpy arrays and scipy csr sparse matrices.
+        Please use with sparse data for top performance. You can adjust a series of
+        parameters that can make the process faster and more informational depending
+        on your dataset. Read more at https://github.com/davisidarta/dbmap
+        """
+        self.n_eigs = n_eigs      
+        self.start_time = time.time()
+        self.N = data.shape[0]
+        if self.ann:
+            # Construct an approximate k-nearest-neighbors graph
+            anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
+                                      metric=self.ann_dist,
+                                      method='hnsw',
+                                      n_jobs=self.n_jobs,
+                                      M=self.M,
+                                      efC=self.efC,
+                                      efS=self.efS)
+            anbrs = anbrs.fit(data)
+            self.ind, self.dists, self.grad = anbrs.ind_dist_grad(data)
+            x, y, self.dists = find(self.dists)
+
+            # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
+            adaptive_k = int(np.floor(self.n_neighbors / 2))
+            adaptive_std = np.zeros(self.N)
+            for i in np.arange(len(adaptive_std)):
+                adaptive_std[i] = np.sort(self.dists.data[self.dists.indptr[i]: self.dists.indptr[i + 1]])[
+                    adaptive_k - 1
+                    ]
+        else:
+            # Construct a k-nearest-neighbors graph
+            nbrs = NearestNeighbors(n_neighbors=int(self.n_neighbors), metric=self.knn_dist, n_jobs=self.n_jobs).fit(
+                data)
+            knn = nbrs.kneighbors_graph(data, mode='distance')
+            # Normalize distances by the distance of median nearest neighbor to account for neighborhood size.
+            adaptive_k = int(np.floor(self.n_neighbors / 2))
+            nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=self.n_jobs).fit(data)
+            adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
+            adaptive_std = np.ravel(adaptive_std.todense())
+            # Distance metrics
+            x, y, dists = find(knn)  # k-nearest-neighbor distances
+
+        if self.kernel_use == 'setty':
+            # X, y specific stds
+            dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+
+        if self.kernel_use == 'sidarta':
+            # X, y specific stds
+            dists = dists - (dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
+
+        W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+        
+        # Kernel construction
+        self.kernel = W + W.T
+        self.ind, self.dists, self.grad = anbrs.ind_dist_grad(W)
+        
+        return self.ind, self.dists, self.grad
+    
+    def ind_dist_grad_norm(self, data, n_eigs=None):
+        self.n_eigs = n_eigs
+
+        # Diffusion through Markov chain
+        D = np.ravel(self.kernel.sum(axis=1))
+        if self.alpha > 0:
+            # L_alpha
+            D[D != 0] = D[D != 0] ** (-self.alpha)
+            mat = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N])
+            kernel = mat.dot(self.kernel).dot(mat)
+            D = np.ravel(kernel.sum(axis=1))
+
+        D[D != 0] = 1 / D[D != 0]
+
+        # Setting the diffusion operator
+        T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
+
+        # Eigen value decomposition
+        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
+        D = np.real(D)
+        V = np.real(V)
+        inds = np.argsort(D)[::-1]
+        D = D[inds]
+        V = V[:, inds]
+
+        # Normalize by the first diffusion component
+        for i in range(V.shape[1]):
+            V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
+
+        # Create the results dictionary
+        self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
+        self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
+        if not issparse(data):
+            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
+        self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
+
+        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        mms = multi.fit(self.res)
+        mms = mms.transform(self.res)
+        
+        anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
+                                  metric=self.ann_dist,
+                                  method='hnsw',
+                                  n_jobs=self.n_jobs,
+                                  M=self.M,
+                                  efC=self.efC,
+                                  efS=self.efS)
+        self.ind, self.dists, self.grad = anbrs.ind_dist_grad(mms)
+
+        end = time.time()
+        print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
+              (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
+
+        return self.ind, self.dists, self.grad

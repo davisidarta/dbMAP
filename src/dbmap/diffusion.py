@@ -2,7 +2,7 @@
 # Author: Davi Sidarta-Oliveira
 # School of Medical Sciences,University of Campinas,Brazil
 # contact: davisidarta@gmail.com
-# This code has contributions from Manu Setty et al., Nat Biotech 2019.
+# Please note that this code has several contributions from Manu Setty et al, Nature
 ######################################
 import time
 import numpy as np
@@ -41,10 +41,12 @@ class Diffusor(TransformerMixin):
 
     sensitivity : Sensitivity to select eigenvectors if diff_normalization is set to 'knee'. Useful when dealing wit
 
-    :return: Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
+    :returns: Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
              resulting components to use during Multiscaling.
-    Examples
+
+    Example
     -------------
+
     import numpy as np
     from sklearn.datasets import load_digits
     from scipy.sparse import csr_matrix
@@ -56,13 +58,7 @@ class Diffusor(TransformerMixin):
 
     # Fit the anisotropic diffusion process
     diff = dbmap.diffusion.Diffusor()
-    diff = diff.fit(data)
-
-    # Obtain kNN graph
-    knn = diff.fit_transform(data)
-
-    # Obtain kNN indices, distances and distance gradient
-    ind, dist, grad = diff.ind_dist_grad(data)
+    res = diff.fit_transform(data)
 
     """
 
@@ -211,3 +207,4 @@ class Diffusor(TransformerMixin):
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
         return self.res['StructureComponents']
+

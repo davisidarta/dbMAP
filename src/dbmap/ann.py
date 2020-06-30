@@ -16,8 +16,10 @@ from sklearn.model_selection import train_test_split
 try:
     import nmslib
 except ImportError:
-    print("The package 'nmslib' is required to run accelerated dbMAP. Please install it 'with pip3 install nmslib'.")
+    print("The package 'nmslib' is required. Please install it 'with pip3 install nmslib'.")
     sys.exit()
+
+print(__doc__)
 
 
 class NMSlibTransformer(TransformerMixin, BaseEstimator):
@@ -26,7 +28,84 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
     an escalable approximate k-nearest-neighbors graph on spaces defined by nmslib.
     Read more about nmslib and its various available metrics at
     https://github.com/nmslib/nmslib.
+    
+    Calling 'nn <- NMSlibTransformer()' initializes the class with
+     neighbour search parameters.
 
+    Parameters
+    ----------
+    number of nearest-neighbors to look for. In practice,
+                     this should be considered the average neighborhood size and thus vary depending
+                     on your number of features, samples and data intrinsic dimensionality. Reasonable values
+                     range from 5 to 100. Smaller values tend to lead to increased graph structure
+                     resolution, but users should beware that a too low value may render granulated and vaguely
+                     defined neighborhoods that arise as an artifact of downsampling. Defaults to 30. Larger
+                     values can slightly increase computational time.
+
+    metric: accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
+                or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+                -'sqeuclidean'
+                -'euclidean'
+                -'euclidean_sparse'
+                -'l1'
+                -'l1_sparse'
+                -'cosine'
+                -'cosine_sparse'
+                -'angular'
+                -'angular_sparse'
+                -'negdotprod'
+                -'negdotprod_sparse'
+                -'levenshtein'
+                -'hamming'
+                -'jaccard'
+                -'jaccard_sparse'
+                -'jansen-shan'
+
+    method: approximate-neighbor search method. Currently, the only option is 'hsnw' (fastest).
+
+    n_jobs: number of threads to be used in computation. Defaults to 10 (~5 cores).
+
+    efC: increasing this value improves the quality of a constructed graph and leads to higher
+             accuracy of search. However this also leads to longer indexing times. A reasonable
+             range is 100-2000. Defaults to 100.
+
+    efS: similarly to efC, improving this value improves recall at the expense of longer
+             retrieval time. A reasonable range is 100-2000.
+
+    M: defines the maximum number of neighbors in the zero and above-zero layers during HSNW
+           (Hierarchical Navigable Small World Graph). However, the actual default maximum number
+           of neighbors for the zero layer is 2*M. For more information on HSNW, please check
+           https://arxiv.org/abs/1603.09320. HSNW is implemented in python via NMSLIB. Please check
+           more about NMSLIB at https://github.com/nmslib/nmslib .
+
+    :returns: Class for really fast approximate-nearest-neighbors search.
+    
+    Example
+    -------------
+    
+    import numpy as np
+    from sklearn.datasets import load_digits
+    from scipy.sparse import csr_matrix
+    from dbmap.ann import NMSlibTransformer
+
+    # Load the MNIST digits data, convert to sparse for speed
+    digits = load_digits()
+    data = csr_matrix(digits)
+
+    # Start class with parameters
+    nn = NMSlibTransformer()
+    nn = nn.fit(data)
+    
+    # Obtain kNN graph
+    knn = nn.transform(data)
+
+    # Obtain kNN indices, distances and distance gradient
+    ind, dist, grad = nn.ind_dist_grad(data)
+    
+    # Test for recall efficiency during approximate nearest neighbors search
+    test = nn.test_efficiency(data)
+    
+    
     """
 
     def __init__(self,
@@ -34,19 +113,11 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                  metric='cosine_sparse',
                  method='hnsw',
                  n_jobs=10,
-                 M=30,
                  efC=100,
-                 efS=100):
-        """
-        Initialize neighbour search parameters.
-        :param n_neighbors: number of nearest-neighbors to look for. In practice,
-        this should be considered the average neighborhood size and can vary depending
-        on your number of samples and data intrinsic dimensionality. Reasonable values
-        range from 5 to 100. Smaller values tend to lead to increased graph structure
-        resolution, but users should beware that a too low value may render granulated and vaguely
-        defined neighborhoods that arise as an artifact of downsampling. Defaults to 30.
-
-        """
+                 efS=100,
+                 M=30
+                 ):
+ 
 
         self.n_neighbors = n_neighbors
         self.method = method
@@ -55,7 +126,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.M = M
         self.efC = efC
         self.efS = efS
-        self.p = p
         self.space = str = {
             'sqeuclidean': 'l2',
             'euclidean': 'l2',
@@ -254,6 +324,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             recall = recall + float(len(correct_set.intersection(ret_set))) / len(correct_set)
         recall = recall / query_qty
         print('kNN recall %f' % recall)
+
 
 
 

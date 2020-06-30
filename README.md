@@ -4,7 +4,7 @@
 
 
 # dbMAP (diffusion-based Manifold Approximation and Projection)
-A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a dimensionality reduction method based on diffusion maps and UMAP that is both generalized and computationally efficient. Please check our preprint at SneakPeak: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3582067
+A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a fast, accurate and modularized dimensional reduction approach. Please check our preprint at SneakPeak: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3582067
 
 # Disclaimer
  As of June 23-30 dbMAP is under active development for the 1.1 release. If you plan on testing dbMAP, we invite you to come back in a couple of days and to check the docker container in the meanwhile.

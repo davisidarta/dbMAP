@@ -2,7 +2,7 @@
 # Author: Davi Sidarta-Oliveira
 # School of Medical Sciences,University of Campinas,Brazil
 # contact: davisidarta@gmail.com
-# Please note that this code has several contributions from Manu Setty et al, Nature
+# This code has contributions from Manu Setty et al., Nat Biotech 2019.
 ######################################
 import time
 import numpy as np

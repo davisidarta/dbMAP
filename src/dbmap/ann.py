@@ -28,13 +28,13 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
     an escalable approximate k-nearest-neighbors graph on spaces defined by nmslib.
     Read more about nmslib and its various available metrics at
     https://github.com/nmslib/nmslib.
-    
+
     Calling 'nn <- NMSlibTransformer()' initializes the class with
      neighbour search parameters.
 
     Parameters
     ----------
-    number of nearest-neighbors to look for. In practice,
+    n_neighbors: number of nearest-neighbors to look for. In practice,
                      this should be considered the average neighborhood size and thus vary depending
                      on your number of features, samples and data intrinsic dimensionality. Reasonable values
                      range from 5 to 100. Smaller values tend to lead to increased graph structure
@@ -79,10 +79,10 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
            more about NMSLIB at https://github.com/nmslib/nmslib .
 
     :returns: Class for really fast approximate-nearest-neighbors search.
-    
+
     Example
     -------------
-    
+
     import numpy as np
     from sklearn.datasets import load_digits
     from scipy.sparse import csr_matrix
@@ -95,17 +95,17 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
     # Start class with parameters
     nn = NMSlibTransformer()
     nn = nn.fit(data)
-    
+
     # Obtain kNN graph
     knn = nn.transform(data)
 
     # Obtain kNN indices, distances and distance gradient
     ind, dist, grad = nn.ind_dist_grad(data)
-    
+
     # Test for recall efficiency during approximate nearest neighbors search
     test = nn.test_efficiency(data)
-    
-    
+
+
     """
 
     def __init__(self,
@@ -117,7 +117,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                  efS=100,
                  M=30
                  ):
- 
+
 
         self.n_neighbors = n_neighbors
         self.method = method
@@ -170,9 +170,15 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
-        self.nmslib_ = nmslib.init(method='hnsw',
-                                   space='cosinesimil_sparse_fast',
-                                   data_type=nmslib.DataType.SPARSE_VECTOR)
+        if issparse(data) == True:
+            self.nmslib_ = nmslib.init(method=self.method,
+                                       space=self.space,
+                                       data_type=nmslib.DataType.SPARSE_VECTOR)
+
+        else:
+            self.nmslib_ = nmslib.init(method=self.method,
+                                       space=self.space,
+                                       data_type=nmslib.DataType.DENSE_VECTOR)
 
         self.nmslib_.addDataPointBatch(data)
         start = time.time()
@@ -324,8 +330,5 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             recall = recall + float(len(correct_set.intersection(ret_set))) / len(correct_set)
         recall = recall / query_qty
         print('kNN recall %f' % recall)
-
-
-
 
 

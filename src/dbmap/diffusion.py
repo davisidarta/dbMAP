@@ -2,6 +2,7 @@
 # Author: Davi Sidarta-Oliveira
 # School of Medical Sciences,University of Campinas,Brazil
 # contact: davisidarta@gmail.com
+# Please note that this code has several contributions from Manu Setty et al, Nature
 ######################################
 import time
 import numpy as np
@@ -10,10 +11,9 @@ from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.neighbors import NearestNeighbors
-from . import ann
-from . import multiscale
 
 print(__doc__)
+
 
 class Diffusor(TransformerMixin):
     """
@@ -45,14 +45,31 @@ class Diffusor(TransformerMixin):
              resulting components to use during Multiscaling.
     Examples
     -------------
-    >>>import dbmap
-    # Fazer o resto do exemplo
+    import numpy as np
+    from sklearn.datasets import load_digits
+    from scipy.sparse import csr_matrix
+    import dbmap
+
+    # Load the MNIST digits data, convert to sparse for speed
+    digits = load_digits()
+    data = csr_matrix(digits)
+
+    # Fit the anisotropic diffusion process
+    diff = dbmap.diffusion.Diffusor()
+    diff = diff.fit(data)
+
+    # Obtain kNN graph
+    knn = diff.fit_transform(data)
+
+    # Obtain kNN indices, distances and distance gradient
+    ind, dist, grad = diff.ind_dist_grad(data)
+
     """
 
     def __init__(self,
                  n_components=100,
                  n_neighbors=30,
-                 alpha=1,
+                 alpha=0.5,
                  n_jobs=10,
                  ann=True,
                  ann_dist='angular_sparse',
@@ -90,7 +107,7 @@ class Diffusor(TransformerMixin):
         self.N = data.shape[0]
         if self.ann:
             # Construct an approximate k-nearest-neighbors graph
-            anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
+            anbrs = NMSlibTransformer(n_neighbors=self.n_neighbors,
                                       metric=self.ann_dist,
                                       method='hnsw',
                                       n_jobs=self.n_jobs,
@@ -118,8 +135,6 @@ class Diffusor(TransformerMixin):
                 dists = dists - (dists / adaptive_std[x])   # Normalize by normalized contribution to neighborhood size.
 
             W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
-
-
 
         else:
             # Construct a k-nearest-neighbors graph
@@ -186,7 +201,7 @@ class Diffusor(TransformerMixin):
             self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        multi = multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
         mms = multi.fit(self.res)
         mms = mms.transform(self.res)
         self.res['StructureComponents'] = mms

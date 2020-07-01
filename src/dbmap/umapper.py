@@ -1385,7 +1385,7 @@ def find_ab_params(spread, min_dist):
     return params[0], params[1]
 
 
-class UMAP(self, BaseEstimator):
+class UMAP(BaseEstimator):
     """Uniform Manifold Approximation and Projection
     Finds a low dimensional embedding of the data that approximates
     an underlying manifold.
@@ -2041,13 +2041,13 @@ class UMAP(self, BaseEstimator):
                                          'jaccard_sparse',
                                          'jansen-shan'}:
                     print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
-                self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X, n_neighbors= self._n_neighbors,
-                                                                                   metric= self.nmslib_metric,
+                self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X, n_neighbors=30,
+                                                                                   metric='cosine_sparse',
                                                                                    method='hnsw',
-                                                                                   n_jobs= self.nmslib_n_jobs,
-                                                                                   efC= self.nmslib_efC,
-                                                                                   efS= self.nmslib_efS,
-                                                                                   M= self.nmslib_M)
+                                                                                   n_jobs= 10,
+                                                                                   efC= 100,
+                                                                                   efS= 100,
+                                                                                   M= 30)
 
 
                 self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set_nmslib(

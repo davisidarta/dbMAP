@@ -130,7 +130,7 @@ class force_directed_layout(TransformerMixin):
             metric_kwds=metric_kwds,
         )
 
-            self.init_coords = np.random.random((self.connectivities.shape[0], 2))
+        self.init_coords = np.random.random((self.connectivities.shape[0], 2))
 
         return self
 

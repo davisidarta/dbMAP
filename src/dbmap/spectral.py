@@ -49,7 +49,7 @@ from umap.nndescent import (
     initialise_search,
 )
 from umap.rp_tree import rptree_leaf_array, make_forest
-from . import spectral_layout
+from . import spectral
 from umap.utils import deheap_sort, submatrix
 from umap.layouts import (
     optimize_layout_euclidean,
@@ -1254,7 +1254,7 @@ def simplicial_set_embedding(
         ).astype(np.float32)
     elif isinstance(init, str) and init == "spectral":
         # We add a little noise to avoid local minima for optimization to come
-        initialisation = spectral_layout(
+        initialisation = spectral.spectral_layout(
             data,
             graph,
             n_components,

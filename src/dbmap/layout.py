@@ -11,7 +11,7 @@ AnyRandom = Union[None, int, random.RandomState]  # maybe in the future random.G
 #from .. import _utils
 #from .. import logging as logg
 #from .utils import get_init_pos_from_paga
-from . import graph_utils
+from .graph_utils import compute_connectivities_adapmap
 from . import spectral
 
 try:
@@ -116,7 +116,7 @@ class force_directed_layout(TransformerMixin):
             # init_coords = get_init_pos_from_paga()
 
         if (self.init_pos is None) :
-            self.distances, self.connectivities = graph_utils.compute_connectivities_adapmap(
+            self.distances, self.connectivities = compute_connectivities_adapmap(
                     data,
                     n_components=100,
                     n_neighbors=30,

@@ -116,7 +116,7 @@ class force_directed_layout(TransformerMixin):
             # init_coords = get_init_pos_from_paga()
 
         if (self.init_pos is None) :
-            self.distances, self.connectivities = graph_utils.compute_connectivity_adapmap(
+            self.distances, self.connectivities = graph_utils.compute_connectivities_adapmap(
                     data,
                     n_components=100,
                     n_neighbors=30,

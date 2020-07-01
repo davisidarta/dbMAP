@@ -5,7 +5,6 @@ from numpy import random
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import SpectralEmbedding
 import networkx as nx
-from typing import Literal
 AnyRandom = Union[None, int, random.RandomState]  # maybe in the future random.Generator
 
 
@@ -15,6 +14,21 @@ AnyRandom = Union[None, int, random.RandomState]  # maybe in the future random.G
 from . import graph_utils
 from . import spectral
 
+try:
+    from typing import Literal
+except ImportError:
+    try:
+        from typing_extensions import Literal
+    except ImportError:
+
+        class LiteralMeta(type):
+            def __getitem__(cls, values):
+                if not isinstance(values, tuple):
+                    values = (values,)
+                return type('Literal_', (Literal,), dict(__args__=values))
+
+        class Literal(metaclass=LiteralMeta):
+            pass
 
 _LAYOUTS = ('fr', 'drl', 'kk', 'grid_fr', 'lgl', 'rt', 'rt_circular', 'fa')
 _Layout = Literal[_LAYOUTS]

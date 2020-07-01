@@ -2947,7 +2947,7 @@ class DataFrameUMAP(BaseEstimator):
                     )
 
             print(self.graph_.data)
-                self.graph_ = reset_local_connectivity(
+            self.graph_ = reset_local_connectivity(
                     self.graph_, reset_local_metrics=True
                 )
 

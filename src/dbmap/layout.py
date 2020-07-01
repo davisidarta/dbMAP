@@ -8,10 +8,10 @@ import networkx as nx
 
 from .. import _utils
 from .. import logging as logg
-from ._utils import get_init_pos_from_paga
-from .._compat import Literal
-from .._utils import AnyRandom, _choose_graph
+from .utils import get_init_pos_from_paga
+from .utils import AnyRandom,
 from . import graph_utils
+from . impotr spectral
 
 
 _LAYOUTS = ('fr', 'drl', 'kk', 'grid_fr', 'lgl', 'rt', 'rt_circular', 'fa')
@@ -84,7 +84,7 @@ class force_directed_layout(TransformerMixin):
         self.n_jobs = n_jobs
         self.kwds = kwds
 
-    def embedd_layout(self, data):
+    def fit(self, data):
 
         start = logg.info(f'drawing graph using layout {layout!r}')
         if self.layout not in _LAYOUTS:
@@ -93,36 +93,56 @@ class force_directed_layout(TransformerMixin):
 
         # init coordinates
         if self.init_pos is not None:
-            self.init_coords = self.init_pos
+        self.init_coords = self.init_pos
 
         elif self.use_paga == True:
             # TODO: add util function to get initial coordinates from a PAGA coarsed graph
             # init_coords = get_init_pos_from_paga()
 
-        else:
+        if (self.init_pos is None) and (not self.use_paga):
             self.distances, self.connectivities = graph_utils.compute_connectivity_adapmap(
-                data,
-                n_components=100,
-                n_neighbors=30,
-                alpha=0.5,
-                n_jobs=10,
-                ann=True,
-                ann_dist='angular_sparse',
-                M=30,
-                efC=100,
-                efS=100,
-                knn_dist='euclidean',
-                kernel_use='sidarta',
-                sensitivity=1,
-                set_op_mix_ratio=1.0,
-                local_connectivity=1.0,
-                metric='cosine'
-
-            )
+                    data,
+                    n_components=100,
+                    n_neighbors=30,
+                    alpha=0.5,
+                    n_jobs=10,
+                    ann=True,
+                    ann_dist='angular_sparse',
+                    M=30,
+                    efC=100,
+                    efS=100,
+                    knn_dist='euclidean',
+                    kernel_use='sidarta',
+                    sensitivity=1,
+                    set_op_mix_ratio=1.0,
+                    local_connectivity=1.0,
+                    metric='cosine'
+        
+                )
             np.random.seed(self.random_state)
+
+        initialisation = spectral.spectral_layout(
+            self.connectivities,
+            graph,
+            n_components,
+            random_state,
+            metric=metric,
+            metric_kwds=metric_kwds,
+        )
 
             self.init_coords = np.random.random((self.connectivities.shape[0], 2))
 
+        return self
+
+    def plot_graph(self, node_size=20, with_labels=False, node_color="blue", node_alpha=0.4, plot_edges=True, edge_color="green", edge_alpha=0.05):
+        import matplotlib.pyplot as plt
+        nx.draw_networkx_nodes(self.G, self.positions, node_size=20, with_labels=False, node_color="blue", alpha=node_alpha)
+        if plot_edges:
+            nx.draw_networkx_edges(self.G, self.positions, edge_color="green", alpha=edge_alpha)
+        plt.axis('off')
+        plt.show()
+
+    def transform(self, X, y=None, **fit_params):
         # see whether fa2 is installed
         if self.layout == 'fa':
             try:
@@ -179,13 +199,3 @@ class force_directed_layout(TransformerMixin):
                 ig_layout =  self.G.layout(self.layout, **self.kwds)
 
         self.positions = np.array(ig_layout.coords)
-
-        return self
-
-    def plot_graph(self, node_size=20, with_labels=False, node_color="blue", node_alpha=0.4, plot_edges=True, edge_color="green", edge_alpha=0.05):
-        import matplotlib.pyplot as plt
-        nx.draw_networkx_nodes(self.G, self.positions, node_size=20, with_labels=False, node_color="blue", alpha=node_alpha)
-        if plot_edges:
-            nx.draw_networkx_edges(self.G, self.positions, edge_color="green", alpha=edge_alpha)
-        plt.axis('off')
-        plt.show()

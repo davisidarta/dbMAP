@@ -61,7 +61,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 -'jaccard_sparse'
                 -'jansen-shan'
 
-    method: approximate-neighbor search method. Currently, the only option is 'hsnw' (fastest).
+    method: approximate-neighbor search method. Defaults to 'hsnw' (usually the fastest).
 
     n_jobs: number of threads to be used in computation. Defaults to 10 (~5 cores).
 

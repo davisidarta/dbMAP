@@ -102,7 +102,7 @@ class force_directed_layout(TransformerMixin):
 
     def fit(self, data):
 
-        start = logg.info(f'drawing graph using layout {self.layout!r}')
+        start = print(f'drawing graph using layout {self.layout!r}')
         if self.layout not in _LAYOUTS:
             raise ValueError(f'Provide a valid layout, one of {_LAYOUTS}.')
 

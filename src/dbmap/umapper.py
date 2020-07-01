@@ -1617,6 +1617,7 @@ class UMAP(BaseEstimator):
         verbose=False,
         unique=False,
     ):
+        self = self
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.output_metric = output_metric
@@ -2048,8 +2049,8 @@ class UMAP(BaseEstimator):
                                                                                    efC= self.nmslib_efC,
                                                                                    efS= self.nmslib_efS,
                                                                                    M= self.nmslib_M)
-                
-                
+
+
                 self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set_nmslib(
                     X[index],
                     self.n_neighbors,

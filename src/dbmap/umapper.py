@@ -2041,7 +2041,6 @@ class UMAP(BaseEstimator):
                                          'jaccard_sparse',
                                          'jansen-shan'}:
                     print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
-
                 self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X, n_neighbors= self._n_neighbors,
                                                                                    metric= self.nmslib_metric,
                                                                                    method='hnsw',
@@ -2049,7 +2048,8 @@ class UMAP(BaseEstimator):
                                                                                    efC= self.nmslib_efC,
                                                                                    efS= self.nmslib_efS,
                                                                                    M= self.nmslib_M)
-
+                
+                
                 self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set_nmslib(
                     X[index],
                     self.n_neighbors,

@@ -5,4 +5,5 @@ from . import utils
 from . import ann
 from . import umapper
 from . import graph_utils
+from . import plot
 from .version import __version__

@@ -2023,8 +2023,8 @@ class UMAP(BaseEstimator):
             # Standard case
             self._small_data = False
 
-            if self._use_nmslib == True:
-                if self._nmslib_metric is not {'sqeuclidean',
+            if self.use_nmslib == True:
+                if self.nmslib_metric is not {'sqeuclidean',
                                          'euclidean',
                                          'euclidean_sparse',
                                          'l1',
@@ -2042,13 +2042,13 @@ class UMAP(BaseEstimator):
                                          'jansen-shan'}:
                     print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
 
-                self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X,
-                                                                                   metric=self._nmslib_metric,
+                self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X, n_neighbors= self._n_neighbors,
+                                                                                   metric= self.nmslib_metric,
                                                                                    method='hnsw',
-                                                                                   n_jobs=self._nmslib_n_jobs,
-                                                                                   efC=self._nmslib_efC,
-                                                                                   efS=self._nmslib_efS,
-                                                                                   M=self._nmslib_M)
+                                                                                   n_jobs= self.nmslib_n_jobs,
+                                                                                   efC= self.nmslib_efC,
+                                                                                   efS= self.nmslib_efS,
+                                                                                   M= self.nmslib_M)
 
                 self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set_nmslib(
                     X[index],

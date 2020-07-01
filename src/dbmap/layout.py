@@ -11,7 +11,7 @@ from .. import logging as logg
 from .utils import get_init_pos_from_paga
 from .utils import AnyRandom,
 from . import graph_utils
-from . impotr spectral
+from . import spectral
 
 
 _LAYOUTS = ('fr', 'drl', 'kk', 'grid_fr', 'lgl', 'rt', 'rt_circular', 'fa')
@@ -86,7 +86,7 @@ class force_directed_layout(TransformerMixin):
 
     def fit(self, data):
 
-        start = logg.info(f'drawing graph using layout {layout!r}')
+        start = logg.info(f'drawing graph using layout {self.layout!r}')
         if self.layout not in _LAYOUTS:
             raise ValueError(f'Provide a valid layout, one of {_LAYOUTS}.')
 
@@ -95,11 +95,11 @@ class force_directed_layout(TransformerMixin):
         if self.init_pos is not None:
         self.init_coords = self.init_pos
 
-        elif self.use_paga == True:
+        #elif (self.use_paga == True):
             # TODO: add util function to get initial coordinates from a PAGA coarsed graph
             # init_coords = get_init_pos_from_paga()
 
-        if (self.init_pos is None) and (not self.use_paga):
+        if (self.init_pos is None) :
             self.distances, self.connectivities = graph_utils.compute_connectivity_adapmap(
                     data,
                     n_components=100,
@@ -117,7 +117,7 @@ class force_directed_layout(TransformerMixin):
                     set_op_mix_ratio=1.0,
                     local_connectivity=1.0,
                     metric='cosine'
-        
+
                 )
             np.random.seed(self.random_state)
 

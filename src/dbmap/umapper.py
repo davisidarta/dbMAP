@@ -282,8 +282,7 @@ def approximate_n_neighbors(
 
 
     """
-    if verbose:
-        print(ts(), "Finding Approximate Nearest Neighbors...")
+    print(ts(), "Finding Approximate Nearest Neighbors...")
 
     import dbmap as dm
     from scipy.sparse import csr_matrix, issparse

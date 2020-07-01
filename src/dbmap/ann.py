@@ -331,4 +331,3 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         recall = recall / query_qty
         print('kNN recall %f' % recall)
 
-

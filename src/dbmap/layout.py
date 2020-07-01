@@ -7,7 +7,7 @@ from sklearn.manifold import SpectralEmbedding
 import networkx as nx
 
 #from .. import _utils
-from .. import logging as logg
+#from .. import logging as logg
 #from .utils import get_init_pos_from_paga
 from .utils import AnyRandom
 from . import graph_utils

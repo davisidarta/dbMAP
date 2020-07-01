@@ -209,7 +209,7 @@ def smooth_knn_dist(distances, k, n_iter=64, local_connectivity=1.0, bandwidth=1
     return result, rho
 
 
-def approximate_n_neighbors(
+def approximate_n_neighbors(data,
         n_neighbors=30,
         metric='cosine_sparse',
         method='hnsw',
@@ -286,10 +286,10 @@ def approximate_n_neighbors(
 
     import dbmap as dm
     from scipy.sparse import csr_matrix, issparse
-    if issparse(X):
-        X = X.tocsr()
+    if issparse(data):
+        data = data.tocsr()
     else:
-        X = csr_matrix(X)
+        data = csr_matrix(data)
 
     knn_indices, knn_dists, grad, kneighbors_graph = dm.ann.NMSlibTransformer(n_neighbors=n_neighbors,
                                                                               metric=metric,
@@ -297,7 +297,7 @@ def approximate_n_neighbors(
                                                                               n_jobs=n_jobs,
                                                                               efC=efC,
                                                                               efS=efS,
-                                                                              M=M).ind_dist_grad(X)
+                                                                              M=M).ind_dist_grad(data)
 
     return knn_indices, knn_dists
 

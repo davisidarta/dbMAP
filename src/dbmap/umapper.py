@@ -1385,7 +1385,7 @@ def find_ab_params(spread, min_dist):
     return params[0], params[1]
 
 
-class UMAP(BaseEstimator):
+class UMAP(self, BaseEstimator):
     """Uniform Manifold Approximation and Projection
     Finds a low dimensional embedding of the data that approximates
     an underlying manifold.
@@ -1617,7 +1617,6 @@ class UMAP(BaseEstimator):
         verbose=False,
         unique=False,
     ):
-        self = self
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.output_metric = output_metric

@@ -126,7 +126,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.M = M
         self.efC = efC
         self.efS = efS
-        self.space = str = {
+        self.space = {
             'sqeuclidean': 'l2',
             'euclidean': 'l2',
             'euclidean_sparse': 'l2_sparse',
@@ -156,7 +156,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         if issparse(data) == False:
             print('Converting input to sparse...')
             try:
-                data = data.tocsr()
+                data = csr_matrix(data)
             except SyntaxError:
                 print("Conversion to csr failed. Please provide a numpy array or a pandas dataframe."
                       "Trying internal construction...")
@@ -330,4 +330,5 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             recall = recall + float(len(correct_set.intersection(ret_set))) / len(correct_set)
         recall = recall / query_qty
         print('kNN recall %f' % recall)
+
 

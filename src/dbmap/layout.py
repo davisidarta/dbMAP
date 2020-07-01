@@ -5,7 +5,7 @@ from numpy import random
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import SpectralEmbedding
 import networkx as nx
-
+from typing import Literal
 AnyRandom = Union[None, int, random.RandomState]  # maybe in the future random.Generator
 
 

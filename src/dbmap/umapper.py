@@ -2041,7 +2041,7 @@ class UMAP(BaseEstimator):
                                          'jaccard',
                                          'jaccard_sparse',
                                          'jansen-shan'}:
-                print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
+                    print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
 
                 self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X,
                                                                  n_neighbors=self.n_neighbors,
@@ -2972,7 +2972,7 @@ class DataFrameUMAP(BaseEstimator):
             self.negative_sample_rate,
             n_epochs,
             init,
-            random_state,
+            self.random_state,
             "manhattan",
             {},
             self._output_distance_func,

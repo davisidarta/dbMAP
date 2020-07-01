@@ -2025,7 +2025,7 @@ class UMAP(BaseEstimator):
             self._small_data = False
 
             if self.use_nmslib == True:
-                if nmslib_metric is not {'sqeuclidean',
+                if self.nmslib_metric is not {'sqeuclidean',
                                          'euclidean',
                                          'euclidean_sparse',
                                          'l1',

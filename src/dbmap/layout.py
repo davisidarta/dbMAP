@@ -93,7 +93,7 @@ class force_directed_layout(TransformerMixin):
 
         # init coordinates
         if self.init_pos is not None:
-        self.init_coords = self.init_pos
+            self.init_coords = self.init_pos
 
         #elif (self.use_paga == True):
             # TODO: add util function to get initial coordinates from a PAGA coarsed graph

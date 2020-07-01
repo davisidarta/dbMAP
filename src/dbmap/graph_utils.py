@@ -167,7 +167,7 @@ def fuzzy_simplicial_set_nmslib(
 
     return result, sigmas, rhos
 
-def _compute_connectivities_adapmap(
+def compute_connectivities_adapmap(
     data,
     n_components=100,
     n_neighbors=30,
@@ -258,11 +258,10 @@ def _compute_connectivities_adapmap(
                  sensitivity=sensitivity).fit(data)
     knn_indices, knn_distances, knn_graph, knn_grad = diff.ind_dist_grad(data)
 
-    from umap.umap_ import fuzzy_simplicial_set
     if not issparse(knn_graph):
         knn_graph = csr_matrix(knn_graph)
 
-    distances, connectivities = fuzzy_simplicial_set(
+    distances, connectivities = fuzzy_simplicial_set_nmslib(
         knn_graph,
         n_neighbors,
         None,
@@ -276,14 +275,14 @@ def _compute_connectivities_adapmap(
         # In umap-learn 0.4, this returns (result, sigmas, rhos)
         connectivities = connectivities[0]
 
-    distances = _get_sparse_matrix_from_indices_distances_dbmap(
+    distances = get_sparse_matrix_from_indices_distances_dbmap(
         knn_indices, knn_distances, knn_graph[0], n_neighbors
     )
 
     return distances, connectivities.tocsr()
 
 
-def _get_sparse_matrix_from_indices_distances_dbmap(knn_indices, knn_dists, n_obs, n_neighbors):
+def get_sparse_matrix_from_indices_distances_dbmap(knn_indices, knn_dists, n_obs, n_neighbors):
     rows = np.zeros((n_obs * n_neighbors), dtype=np.int64)
     cols = np.zeros((n_obs * n_neighbors), dtype=np.int64)
     vals = np.zeros((n_obs * n_neighbors), dtype=np.float64)
@@ -541,3 +540,24 @@ def smooth_knn_dist(distances, k, n_iter=64, local_connectivity=1.0, bandwidth=1
 
     return result, rho
 
+def get_igraph_from_adjacency(adjacency, directed=None):
+    """Get igraph graph from adjacency matrix."""
+    import igraph as ig
+
+    sources, targets = adjacency.nonzero()
+    weights = adjacency[sources, targets]
+    if isinstance(weights, np.matrix):
+        weights = weights.A1
+    g = ig.Graph(directed=directed)
+    g.add_vertices(adjacency.shape[0])  # this adds adjacency.shape[0] vertices
+    g.add_edges(list(zip(sources, targets)))
+    try:
+        g.es['weight'] = weights
+    except:
+        pass
+    if g.vcount() != adjacency.shape[0]:
+        logg.warning(
+            f'The constructed graph has only {g.vcount()} nodes. '
+            'Your adjacency matrix contained redundant nodes.'
+        )
+    return g

@@ -1,6 +1,5 @@
 # Author: Leland McInnes <leland.mcinnes@gmail.com>
 # Contributors: Davi Sidarta-Oliveira (acceleration via NMSLIB) <davisidarta@gmail.com>
-#
 # License: BSD 3 clause
 from __future__ import print_function
 
@@ -2045,13 +2044,13 @@ class UMAP(BaseEstimator):
                 print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
 
                 self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X,
-                                                                 n_neighbors=n_neighbors,
-                                                                 metric=nmslib_metric,
+                                                                 n_neighbors=self.n_neighbors,
+                                                                 metric=self.nmslib_metric,
                                                                  method='hnsw',
-                                                                 n_jobs=nmslib_n_jobs,
-                                                                 efC=nmslib_efC,
-                                                                 efS=nmslib_efS,
-                                                                 M=nmslib_M)
+                                                                 n_jobs=self.nmslib_n_jobs,
+                                                                 efC=self.nmslib_efC,
+                                                                 efS=self.nmslib_efS,
+                                                                 M=self.nmslib_M)
 
                 self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set_nmslib(
                     X[index],

@@ -2044,8 +2044,7 @@ class UMAP(BaseEstimator):
                     print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
 
                 self._knn_indices, self.self._knn_dists, = approximate_n_neighbors(X,
-                                                                 n_neighbors=self.n_neighbors,
-                                                                 metric=self.nmslib_metric,
+                                                                                   metric=self.nmslib_metric,
                                                                  method='hnsw',
                                                                  n_jobs=self.nmslib_n_jobs,
                                                                  efC=self.nmslib_efC,

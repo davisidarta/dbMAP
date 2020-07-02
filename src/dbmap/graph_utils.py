@@ -322,7 +322,8 @@ def approximate_n_neighbors(data,
         n_jobs=10,
         efC=100,
         efS=100,
-        M=30
+        M=30,
+        dense=False
 ):
     """
     Simple function using NMSlibTransformer from dbmap.ann. This implements a very fast
@@ -402,7 +403,7 @@ def approximate_n_neighbors(data,
                                                                               n_jobs=n_jobs,
                                                                               efC=efC,
                                                                               efS=efS,
-                                                                              M=M).ind_dist_grad(data)
+                                                                              M=M, dense=dense).ind_dist_grad(data)
 
     return knn_indices, knn_dists
 

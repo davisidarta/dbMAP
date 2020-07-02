@@ -317,7 +317,7 @@ def get_sparse_matrix_from_indices_distances_dbmap(knn_indices, knn_dists, n_obs
 
 def approximate_n_neighbors(data,
         n_neighbors=30,
-        metric='cosine_sparse',
+        metric='cosine',
         method='hnsw',
         n_jobs=10,
         efC=100,

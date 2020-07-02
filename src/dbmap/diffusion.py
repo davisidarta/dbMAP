@@ -118,6 +118,7 @@ class Diffusor(TransformerMixin):
                                       efS=self.efS)
             anbrs = anbrs.fit(data)
             knn = anbrs.transform(data)
+            knn = csr_matrix(knn)
             # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
             adaptive_k = int(np.floor(self.n_neighbors / 2))
             adaptive_std = np.zeros(self.N)

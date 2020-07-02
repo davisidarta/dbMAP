@@ -156,8 +156,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         if issparse(data) == False:
             print('Converting input to sparse...')
             import pandas as pd
-            if isinstance(data, pd.DataFrame):
-                data = csr_matrix(data.values.T)
+            if isinstance(data, pd.DataFrame) or isinstance(data, np.numarray):
+                data = csr_matrix(data.values)
             else:
                 data = csr_matrix(data)
 
@@ -186,17 +186,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, data):
-        
-        if issparse(data) == True:
-            print('Sparse input. Proceding without converting...')
-        if issparse(data) == False:
-            print('Converting input to sparse...')
-            import pandas as pd
-            if isinstance(data, pd.DataFrame):
-                data = csr_matrix(data.values)
-            else:
-                data = csr_matrix(data)
-
         start = time.time()
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}

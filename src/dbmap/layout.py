@@ -12,7 +12,7 @@ AnyRandom = Union[None, int, random.RandomState]  # maybe in the future random.G
 #from .. import logging as logg
 #from .utils import get_init_pos_from_paga
 from .graph_utils import compute_connectivities_adapmap
-from . import spectral
+from .spectral import spectral_layout
 
 try:
     from typing import Literal
@@ -136,11 +136,10 @@ class force_directed_layout(TransformerMixin):
                 )
             np.random.seed(self.random_state)
 
-        initialisation = spectral.spectral_layout(
+        initialisation = spectral_layout(
             self.connectivities,
-            graph,
-            n_components,
-            random_state,
+            self.distances,
+            dim=2,
             metric=metric,
             metric_kwds=metric_kwds,
         )

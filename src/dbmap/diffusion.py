@@ -26,7 +26,7 @@ class Diffusor(TransformerMixin):
 
     Parameters
     ----------
-    n_components : Number of diffusion components to compute. Defaults to 50. We suggest larger values if
+    n_components : Number of diffusion components to compute. Defaults to 100. We suggest larger values if
                    analyzing more than 10,000 cells.
 
     n_neighbors : Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
@@ -209,7 +209,7 @@ class Diffusor(TransformerMixin):
         parameters that can make the process faster and more informational depending
         on your dataset. Read more at https://github.com/davisidarta/dbmap
         """
-        self.n_eigs = n_eigs      
+        self.n_eigs = n_eigs
         self.start_time = time.time()
         self.N = data.shape[0]
         if self.ann:
@@ -222,7 +222,7 @@ class Diffusor(TransformerMixin):
                                       efC=self.efC,
                                       efS=self.efS)
             anbrs = anbrs.fit(data)
-            self.ind, self.dists, self.grad = anbrs.ind_dist_grad(data)
+            self.ind, self.dists, self.grad, kneighbors_graph = anbrs.ind_dist_grad(data)
             x, y, self.dists = find(self.dists)
 
             # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
@@ -254,15 +254,10 @@ class Diffusor(TransformerMixin):
             dists = dists - (dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
 
         W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
-        
+
         # Kernel construction
         self.kernel = W + W.T
         self.ind, self.dists, self.grad = anbrs.ind_dist_grad(W)
-        
-        return self.ind, self.dists, self.grad
-    
-    def ind_dist_grad_norm(self, data, n_eigs=None):
-        self.n_eigs = n_eigs
 
         # Diffusion through Markov chain
         D = np.ravel(self.kernel.sum(axis=1))
@@ -300,7 +295,7 @@ class Diffusor(TransformerMixin):
         multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
         mms = multi.fit(self.res)
         mms = mms.transform(self.res)
-        
+
         anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
                                   metric=self.ann_dist,
                                   method='hnsw',

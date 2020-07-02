@@ -155,16 +155,16 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             print('Sparse input. Proceding without converting...')
         if issparse(data) == False:
             print('Converting input to sparse...')
-            try:
-                data = csr_matrix(data)
-            except SyntaxError:
-                print("Conversion to csr failed. Please provide a numpy array or a pandas dataframe."
-                      "Trying internal construction...")
-                sys.exit()
-            try:
-                data = csr_matrix(data)
-            except SyntaxError:
-                print("Conversion to csr failed. Please provide a numpy array or a pandas dataframe.")
+            import pandas as pd
+            if isinstance(data, pd.DataFrame):
+                data = csr_matrix(data.values)
+            else:
+                try:
+                    data = csr_matrix(data)
+                try:
+                        data = data.tocsr()
+                    except SyntaxError:
+                        print("Conversion to csr failed. Please provide a numpy array or a pandas dataframe.")
 
         self.n_samples_fit_ = data.shape[0]
 
@@ -186,6 +186,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         end = time.time()
         print('Index-time parameters', 'M:', self.M, 'n_threads:', self.n_jobs, 'efConstruction:', self.efC, 'post:0')
         print('Indexing time = %f (sec)' % (end - start))
+
+
         return self
 
     def transform(self, data):

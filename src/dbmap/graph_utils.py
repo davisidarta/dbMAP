@@ -248,8 +248,8 @@ def compute_connectivities_adapmap(
         import pandas as pd
         if isinstance(data, pd.DataFrame):
             data = csr_matrix(data.values.T)
-        else:
-            data = csr_matrix(data)
+    elif isinstance(data, np.ndarray):
+        data = csr_matrix(data)
 
     diff = diffusion.Diffusor(
                  n_components=n_components,

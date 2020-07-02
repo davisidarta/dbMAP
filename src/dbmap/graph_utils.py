@@ -289,7 +289,7 @@ def compute_connectivities_adapmap(
             connectivities = connectivities.tocsr()
 
 
-    return knn_graph, connectivities.tocsr()
+    return knn_graph, connectivities
 
 
 def get_sparse_matrix_from_indices_distances_dbmap(knn_indices, knn_dists, n_obs, n_neighbors):

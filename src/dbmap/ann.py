@@ -221,7 +221,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
     def ind_dist_grad(self, data):
         start = time.time()
-
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}
         print('Query-time parameter efSearch:', self.efS)

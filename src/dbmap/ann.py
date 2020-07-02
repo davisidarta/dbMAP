@@ -159,7 +159,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             import pandas as pd
             if isinstance(data, pd.DataFrame):
                 data = csr_matrix(data.values.T)
-        elif isinstance(data, numpy.ndarray):
+        elif isinstance(data, np.ndarray):
             data = csr_matrix(data)
 
         self.n_samples_fit_ = data.shape[0]

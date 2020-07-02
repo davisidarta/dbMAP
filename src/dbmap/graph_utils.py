@@ -21,10 +21,9 @@ def fuzzy_simplicial_set_nmslib(
         nmslib_efC=100,
         nmslib_efS=100,
         nmslib_M=30,
-
-    set_op_mix_ratio=1.0,
-    local_connectivity=1.0,
-    apply_set_operations=True):
+        set_op_mix_ratio=1.0,
+        local_connectivity=1.0,
+        apply_set_operations=True):
 
     """Given a set of data X, a neighborhood size, and a measure of distance
     compute the fuzzy simplicial set (here represented as a fuzzy graph in
@@ -184,7 +183,6 @@ def compute_connectivities_adapmap(
     sensitivity=1,
     set_op_mix_ratio=1.0,
     local_connectivity=1.0,
-    metric='cosine'
 
 ):
     """
@@ -275,10 +273,9 @@ def compute_connectivities_adapmap(
     distances, connectivities = fuzzy_simplicial_set_nmslib(
         knn_graph,
         n_neighbors,
-        None,
-        metric,
         knn_indices=knn_indices,
         knn_dists=knn_distances,
+        nmslib_metric=ann_dist,
         set_op_mix_ratio=set_op_mix_ratio,
         local_connectivity=local_connectivity,
     )
@@ -398,7 +395,7 @@ def approximate_n_neighbors(data,
     else:
         data = csr_matrix(data)
 
-    knn_indices, knn_dists, grad, kneighbors_graph = dm.ann.NMSlibTransformer(n_neighbors=n_neighbors,
+    knn_inds, knn_distances, grad, kneighbors_graph = dm.ann.NMSlibTransformer(n_neighbors=n_neighbors,
                                                                               metric=metric,
                                                                               method=method,
                                                                               n_jobs=n_jobs,
@@ -406,7 +403,7 @@ def approximate_n_neighbors(data,
                                                                               efS=efS,
                                                                               M=M, dense=dense).ind_dist_grad(data)
 
-    return knn_indices, knn_dists
+    return knn_inds, knn_distances
 
 def compute_membership_strengths(knn_indices, knn_dists, sigmas, rhos):
     """Construct the membership strength data for the 1-skeleton of each local
@@ -568,7 +565,7 @@ def get_igraph_from_adjacency(adjacency, directed=None):
     except:
         pass
     if g.vcount() != adjacency.shape[0]:
-        logg.warning(
+        print(
             f'The constructed graph has only {g.vcount()} nodes. '
             'Your adjacency matrix contained redundant nodes.'
         )

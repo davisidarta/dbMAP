@@ -129,7 +129,7 @@ def fuzzy_simplicial_set_nmslib(
                              'jaccard',
                              'jaccard_sparse',
                              'jansen-shan'}:
-        print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
+            print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
         knn_indices, knn_dists = approximate_n_neighbors(X,
                                                      n_neighbors=n_neighbors,
                                                      metric=nmslib_metric,
@@ -138,7 +138,7 @@ def fuzzy_simplicial_set_nmslib(
                                                      efC=nmslib_efC,
                                                      efS=nmslib_efS,
                                                      M=nmslib_M)
-    
+
     knn_dists = knn_dists.astype(np.float32)
 
     sigmas, rhos = smooth_knn_dist(

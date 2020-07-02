@@ -151,15 +151,16 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         # see more metrics in the manual
         # https://github.com/nmslib/nmslib/tree/master/manual
 
+        from scipy.sparse import csr_matrix, issparse
         if issparse(data) == True:
             print('Sparse input. Proceding without converting...')
         if issparse(data) == False:
             print('Converting input to sparse...')
             import pandas as pd
-            if isinstance(data, pd.DataFrame) or isinstance(data, np.numarray):
-                data = csr_matrix(data.values)
-            else:
-                data = csr_matrix(data)
+            if isinstance(data, pd.DataFrame):
+                data = csr_matrix(data.values.T)
+        elif isinstance(data, np.numarray):
+            data = csr_matrix(data)
 
         self.n_samples_fit_ = data.shape[0]
 

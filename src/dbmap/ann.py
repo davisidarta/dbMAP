@@ -164,32 +164,33 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                                        space=self.space,
                                        data_type=nmslib.DataType.DENSE_VECTOR)
 
-        from scipy.sparse import csr_matrix, issparse
-        if issparse(data) == True:
-            print('Sparse input. Proceding without converting...')
-            if isinstance(data, np.ndarray):
+        else:
+            from scipy.sparse import csr_matrix, issparse
+            if issparse(data) == True:
+                print('Sparse input. Proceding without converting...')
+                if isinstance(data, np.ndarray):
+                    data = csr_matrix(data)
+            if issparse(data) == False:
+                print('Converting input to sparse...')
+                import pandas as pd
+                if isinstance(data, pd.DataFrame):
+                    data = csr_matrix(data.values.T)
+            elif isinstance(data, np.ndarray):
                 data = csr_matrix(data)
-        if issparse(data) == False:
-            print('Converting input to sparse...')
-            import pandas as pd
-            if isinstance(data, pd.DataFrame):
-                data = csr_matrix(data.values.T)
-        elif isinstance(data, np.ndarray):
-            data = csr_matrix(data)
-
+    
         self.n_samples_fit_ = data.shape[0]
-
+    
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
-
-        if issparse(data) == True:
+    
+        if (issparse(data) == True) and (not self.dense):
             self.nmslib_ = nmslib.init(method=self.method,
-                                       space=self.space,
-                                       data_type=nmslib.DataType.SPARSE_VECTOR)
-
+                                           space=self.space,
+                                           data_type=nmslib.DataType.SPARSE_VECTOR)
+    
         else:
             self.nmslib_ = nmslib.init(method=self.method,
-                                       space=self.space,
-                                       data_type=nmslib.DataType.DENSE_VECTOR)
+                                           space=self.space,
+                                           data_type=nmslib.DataType.DENSE_VECTOR)
 
         self.nmslib_.addDataPointBatch(data)
         start = time.time()

@@ -264,7 +264,7 @@ def compute_connectivities_adapmap(
                  knn_dist=knn_dist,
                  kernel_use=kernel_use,
                  sensitivity=sensitivity).fit(data)
-    knn_indices, knn_distances, knn_graph, knn_grad = diff.ind_dist_grad(data, dense=True)
+    knn_indices, knn_distances, knn_graph, knn_grad = diff.ind_dist_grad(data, dense=False)
 
     if not issparse(knn_graph):
         knn_graph = csr_matrix(knn_graph)

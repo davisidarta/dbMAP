@@ -309,10 +309,10 @@ class Diffusor(TransformerMixin):
                                   M=self.M,
                                   efC=self.efC,
                                   efS=self.efS, dense=True).fit(mms)
-        self.ind, self.dists, self.grad, kgraph = anbrs.ind_dist_grad(mms)
+        self.ind, self.dists, self.grad, self.graph = anbrs.ind_dist_grad(mms)
 
         end = time.time()
         print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
-        return self.ind, self.dists, self.grad
+        return self.ind, self.dists, self.grad, self.graph

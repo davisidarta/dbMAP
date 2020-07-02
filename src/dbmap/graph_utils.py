@@ -285,9 +285,9 @@ def compute_connectivities_adapmap(
     if issparse(connectivities):
         if isinstance(connectivities, np.ndarray):
             connectivities = csr_matrix(connectivities)
-        elif:
+        else:
             connectivities = connectivities.tocsr()
-    
+
 
     return knn_graph, connectivities.tocsr()
 

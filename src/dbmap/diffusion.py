@@ -304,7 +304,7 @@ class Diffusor(TransformerMixin):
                                   n_jobs=self.n_jobs,
                                   M=self.M,
                                   efC=self.efC,
-                                  efS=self.efS)
+                                  efS=self.efS).fit()
         self.ind, self.dists, self.grad, kgraph = anbrs.ind_dist_grad(mms)
 
         end = time.time()

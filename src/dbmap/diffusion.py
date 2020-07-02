@@ -305,7 +305,7 @@ class Diffusor(TransformerMixin):
                                   M=self.M,
                                   efC=self.efC,
                                   efS=self.efS)
-        self.ind, self.dists, self.grad = anbrs.ind_dist_grad(mms)
+        self.ind, self.dists, self.grad, kgraph = anbrs.ind_dist_grad(mms)
 
         end = time.time()
         print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %

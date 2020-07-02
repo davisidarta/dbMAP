@@ -240,8 +240,16 @@ def compute_connectivities_adapmap(
 
 
     """
-    from scipy.sparse import csr_matrix
-
+    from scipy.sparse import csr_matrix, issparse
+    if issparse(data) == True:
+        print('Sparse input. Proceding without converting...')
+    if issparse(data) == False:
+        print('Converting input to sparse...')
+        import pandas as pd
+        if isinstance(data, pd.DataFrame):
+            data = csr_matrix(data.values.T)
+        else:
+            data = csr_matrix(data)
 
     diff = diffusion.Diffusor(
                  n_components=n_components,

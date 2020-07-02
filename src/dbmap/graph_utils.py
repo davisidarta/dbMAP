@@ -282,6 +282,12 @@ def compute_connectivities_adapmap(
     if isinstance(connectivities, tuple):
         # In umap-learn 0.4, this returns (result, sigmas, rhos)
         connectivities = connectivities[0]
+    if issparse(connectivities):
+        if isinstance(connectivities, np.ndarray):
+            connectivities = csr_matrix(connectivities)
+        elif:
+            connectivities = connectivities.tocsr()
+    
 
     return knn_graph, connectivities.tocsr()
 

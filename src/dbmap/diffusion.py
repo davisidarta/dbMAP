@@ -276,10 +276,9 @@ class Diffusor(TransformerMixin):
 
         # Eigen value decomposition
         if dense:
-            T = T.toarray()
             from scipy.linalg import eig
             D, V = eig(T, self.n_components)
-            
+
         else:
             D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
         D = np.real(D)

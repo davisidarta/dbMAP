@@ -174,7 +174,7 @@ def compute_connectivities_adapmap(
     alpha=0.5,
     n_jobs=10,
     ann=True,
-    ann_dist='angular_sparse',
+    ann_dist='cosine',
     M=30,
     efC=100,
     efS=100,

@@ -226,7 +226,7 @@ class Diffusor(TransformerMixin):
             anbrs = anbrs.fit(data)
             self.ind, self.dists, self.grad, kneighbors_graph = anbrs.ind_dist_grad(data)
             x, y, self.dists = find(self.dists)
-            self.dists = csr_matrix(self.dists)
+            self.dists = self.dists.tocsr()
 
             # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
             adaptive_k = int(np.floor(self.n_neighbors / 2))

@@ -159,7 +159,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
-        if dense:
+        if self.dense:
             self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
                                        data_type=nmslib.DataType.DENSE_VECTOR)

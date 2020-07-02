@@ -78,6 +78,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
            https://arxiv.org/abs/1603.09320. HSNW is implemented in python via NMSLIB. Please check
            more about NMSLIB at https://github.com/nmslib/nmslib .
 
+    dense: Whether to force the algorithm to use dense data, such as np.ndarrays and pandas DataFrames.
+
     :returns: Class for really fast approximate-nearest-neighbors search.
 
     Example
@@ -115,7 +117,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                  n_jobs=10,
                  efC=100,
                  efS=100,
-                 M=30
+                 M=30,
+                 dense=False
                  ):
 
 
@@ -146,10 +149,20 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             'jaccard_sparse': 'jaccard_sparse',
             'jansen-shan': 'jsmetrfastapprox'
         }[self.metric]
+        self.dense = dense
 
     def fit(self, data):
         # see more metrics in the manual
         # https://github.com/nmslib/nmslib/tree/master/manual
+
+        self.n_samples_fit_ = data.shape[0]
+
+        index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
+
+        if dense:
+            self.nmslib_ = nmslib.init(method=self.method,
+                                       space=self.space,
+                                       data_type=nmslib.DataType.DENSE_VECTOR)
 
         from scipy.sparse import csr_matrix, issparse
         if issparse(data) == True:
@@ -162,7 +175,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             if isinstance(data, pd.DataFrame):
                 data = csr_matrix(data.values.T)
         elif isinstance(data, np.ndarray):
-            data = data
+            data = csr_matrix(data)
 
         self.n_samples_fit_ = data.shape[0]
 

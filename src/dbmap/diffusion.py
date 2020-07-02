@@ -202,7 +202,7 @@ class Diffusor(TransformerMixin):
 
         return self.res['StructureComponents']
 
-    def ind_dist_grad(self, data, n_eigs=None):
+    def ind_dist_grad(self, data, n_eigs=None, dense=False):
         """Effectively computes on data. Also returns the normalized diffusion distances,
         indexes and gradient obtained by approximating the Laplace-Beltrami operator.
         :param plot_knee: Whether to plot the scree plot of diffusion eigenvalues.
@@ -275,7 +275,13 @@ class Diffusor(TransformerMixin):
         T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
 
         # Eigen value decomposition
-        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
+        if dense:
+            T = T.toarray()
+            from scipy.linalg import eig
+            D, V = eig(T, self.n_components)
+            
+        else:
+            D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
         D = np.real(D)
         V = np.real(V)
         inds = np.argsort(D)[::-1]

@@ -270,14 +270,15 @@ class Diffusor(TransformerMixin):
             D = np.ravel(kernel.sum(axis=1))
 
         D[D != 0] = 1 / D[D != 0]
-        
+
         # Setting the diffusion operator
         T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
 
         # Eigen value decomposition
         if dense:
+            from scipy.linalg import eig
 
-            D, V = eigs(T.toarray(), self.n_components, tol=1e-4, maxiter=1000)
+            D, V = eig(T.toarray())
         else:
             D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
         D = np.real(D)

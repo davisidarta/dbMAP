@@ -132,7 +132,6 @@ class force_directed_layout(TransformerMixin):
                     sensitivity=1,
                     set_op_mix_ratio=1.0,
                     local_connectivity=1.0,
-                    metric='cosine'
 
                 )
             np.random.seed(self.random_state)

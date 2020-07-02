@@ -159,12 +159,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             if isinstance(data, pd.DataFrame):
                 data = csr_matrix(data.values)
             else:
-                try:
-                    data = csr_matrix(data)
-                try:
-                        data = data.tocsr()
-                    except SyntaxError:
-                        print("Conversion to csr failed. Please provide a numpy array or a pandas dataframe.")
+                data = csr_matrix(data)
 
         self.n_samples_fit_ = data.shape[0]
 

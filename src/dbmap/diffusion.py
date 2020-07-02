@@ -245,17 +245,17 @@ class Diffusor(TransformerMixin):
             adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
             adaptive_std = np.ravel(adaptive_std.todense())
             # Distance metrics
-            x, y, dists = find(knn)  # k-nearest-neighbor distances
+            x, y, self.dists = find(knn)  # k-nearest-neighbor distances
 
         if self.kernel_use == 'setty':
             # X, y specific stds
-            dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+            self.dists = self.dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
 
         if self.kernel_use == 'sidarta':
             # X, y specific stds
-            dists = dists - (dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
+            self.dists = self.dists - (self.dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
 
-        W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+        W = csr_matrix((np.exp(-self.dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
         # Kernel construction
         self.kernel = W + W.T

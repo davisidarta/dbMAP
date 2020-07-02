@@ -303,7 +303,7 @@ class Diffusor(TransformerMixin):
         mms = mms.transform(self.res)
 
         anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
-                                  metric=self.ann_dist,
+                                  metric='cosine',
                                   method='hnsw',
                                   n_jobs=self.n_jobs,
                                   M=self.M,

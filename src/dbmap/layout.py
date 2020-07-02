@@ -139,7 +139,8 @@ class force_directed_layout(TransformerMixin):
         initialisation = spectral_layout(
             self.connectivities,
             self.distances,
-            dim=2)
+            dim=2,
+            random_state=self.random_state)
 
         self.init_coords = np.random.random((self.connectivities.shape[0], 2))
 

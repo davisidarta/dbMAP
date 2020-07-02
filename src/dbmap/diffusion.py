@@ -259,7 +259,7 @@ class Diffusor(TransformerMixin):
 
         # Kernel construction
         self.kernel = W + W.T
-        self.ind, self.dists, self.grad = anbrs.ind_dist_grad(W)
+        self.ind, self.dists, self.grad, kgraph = anbrs.ind_dist_grad(W)
 
         # Diffusion through Markov chain
         D = np.ravel(self.kernel.sum(axis=1))

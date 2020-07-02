@@ -146,16 +146,9 @@ class force_directed_layout(TransformerMixin):
 
         return self
 
-    def plot_graph(self, node_size=20, with_labels=False, node_color="blue", node_alpha=0.4, plot_edges=True, edge_color="green", edge_alpha=0.05):
-        import matplotlib.pyplot as plt
-        nx.draw_networkx_nodes(self.G, self.positions, node_size=20, with_labels=False, node_color="blue", alpha=node_alpha)
-        if plot_edges:
-            nx.draw_networkx_edges(self.G, self.positions, edge_color="green", alpha=edge_alpha)
-        plt.axis('off')
-        plt.show()
-
     def transform(self, X, y=None, **fit_params):
         # see whether fa2 is installed
+        self.G = nx.random_geometric_graph(400, 0.2)
         if self.layout == 'fa':
             try:
                 from fa2 import ForceAtlas2
@@ -211,3 +204,14 @@ class force_directed_layout(TransformerMixin):
                 ig_layout =  self.G.layout(self.layout, **self.kwds)
 
         self.positions = np.array(ig_layout.coords)
+
+
+    def plot_graph(self, node_size=20, with_labels=False, node_color="blue", node_alpha=0.4, plot_edges=True,
+                   edge_color="green", edge_alpha=0.05):
+        import matplotlib.pyplot as plt
+        nx.draw_networkx_nodes(self.G, self.positions, node_size=20, with_labels=False, node_color="blue",
+                               alpha=node_alpha)
+        if plot_edges:
+            nx.draw_networkx_edges(self.G, self.positions, edge_color="green", alpha=edge_alpha)
+        plt.axis('off')
+        plt.show()

@@ -12,15 +12,16 @@ INT32_MIN = np.iinfo(np.int32).min + 1
 INT32_MAX = np.iinfo(np.int32).max - 1
 
 def fuzzy_simplicial_set_nmslib(
-    X,
-    n_neighbors,
-    nmslib_metric='cosine_sparse',
-    nmslib_n_jobs=None,
-    nmslib_efC=100,
-    nmslib_efS=100,
-    nmslib_M=30,
-    knn_indices=None,
-    knn_dists=None,
+        X,
+        n_neighbors,
+        knn_indices=None,
+        knn_dists=None,
+        nmslib_metric='cosine',
+        nmslib_n_jobs=None,
+        nmslib_efC=100,
+        nmslib_efS=100,
+        nmslib_M=30,
+
     set_op_mix_ratio=1.0,
     local_connectivity=1.0,
     apply_set_operations=True):
@@ -112,7 +113,7 @@ def fuzzy_simplicial_set_nmslib(
     """
     if knn_indices is None or knn_dists is None:
         print('Running fast approximate nearest neighbors with NMSLIB using HNSW...')
-    if nmslib_metric is not {'sqeuclidean',
+        if nmslib_metric is not {'sqeuclidean',
                              'euclidean',
                              'euclidean_sparse',
                              'l1',
@@ -129,7 +130,7 @@ def fuzzy_simplicial_set_nmslib(
                              'jaccard_sparse',
                              'jansen-shan'}:
         print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
-    knn_indices, knn_dists = approximate_n_neighbors(X,
+        knn_indices, knn_dists = approximate_n_neighbors(X,
                                                      n_neighbors=n_neighbors,
                                                      metric=nmslib_metric,
                                                      method='hnsw',
@@ -137,7 +138,7 @@ def fuzzy_simplicial_set_nmslib(
                                                      efC=nmslib_efC,
                                                      efS=nmslib_efS,
                                                      M=nmslib_M)
-
+    
     knn_dists = knn_dists.astype(np.float32)
 
     sigmas, rhos = smooth_knn_dist(

@@ -283,11 +283,7 @@ def compute_connectivities_adapmap(
         # In umap-learn 0.4, this returns (result, sigmas, rhos)
         connectivities = connectivities[0]
 
-    distances = get_sparse_matrix_from_indices_distances_dbmap(
-        knn_indices, knn_distances, knn_graph[0], n_neighbors
-    )
-
-    return distances, connectivities.tocsr()
+    return knn_graph, connectivities.tocsr()
 
 
 def get_sparse_matrix_from_indices_distances_dbmap(knn_indices, knn_dists, n_obs, n_neighbors):

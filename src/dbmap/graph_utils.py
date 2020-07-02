@@ -270,7 +270,7 @@ def compute_connectivities_adapmap(
     if not issparse(knn_graph):
         knn_graph = csr_matrix(knn_graph)
 
-    distances, connectivities = fuzzy_simplicial_set_nmslib(
+    distances, connectivities, rhos = fuzzy_simplicial_set_nmslib(
         knn_graph,
         n_neighbors,
         knn_indices=knn_indices,

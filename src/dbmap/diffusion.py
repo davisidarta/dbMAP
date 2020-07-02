@@ -276,7 +276,7 @@ class Diffusor(TransformerMixin):
         T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
 
         # Eigen value decomposition
-        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
+        D, V = eigs(T.toarray(), self.n_components, tol=1e-4, maxiter=1000)
         D = np.real(D)
         V = np.real(V)
         inds = np.argsort(D)[::-1]

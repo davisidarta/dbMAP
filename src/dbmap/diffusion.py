@@ -104,6 +104,8 @@ class Diffusor(TransformerMixin):
         self.plot_knee = plot_knee
         self.start_time = time.time()
 
+
+
         self.N = data.shape[0]
         if self.ann:
             # Construct an approximate k-nearest-neighbors graph

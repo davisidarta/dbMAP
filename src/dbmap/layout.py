@@ -84,10 +84,10 @@ class force_directed_layout(TransformerMixin):
             the field is called 'X_draw_graph_fa'
         """
     def __init__(self,
-                 layout = 'fa',
-                 init_pos = None,
-                 use_paga = False,
-                 root = None,
+                 layout='fa',
+                 init_pos=None,
+                 use_paga=False,
+                 root=None,
                  random_state = 0,
                  n_jobs = 10,
                  **kwds
@@ -139,10 +139,7 @@ class force_directed_layout(TransformerMixin):
         initialisation = spectral_layout(
             self.connectivities,
             self.distances,
-            dim=2,
-            metric=metric,
-            metric_kwds=metric_kwds,
-        )
+            dim=2)
 
         self.init_coords = np.random.random((self.connectivities.shape[0], 2))
 

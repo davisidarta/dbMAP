@@ -157,7 +157,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             print('Converting input to sparse...')
             import pandas as pd
             if isinstance(data, pd.DataFrame):
-                data = csr_matrix(data.values)
+                data = csr_matrix(data.values.T)
             else:
                 data = csr_matrix(data)
 

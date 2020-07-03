@@ -6,35 +6,33 @@
 # dbMAP (diffusion-based Manifold Approximation and Projection)
 A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a fast, accurate and modularized dimensional reduction approach. Please check our preprint at SneakPeak: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3582067
 
-# Disclaimer
- As of June 23-30 dbMAP is under active development for the 1.1 release. If you plan on testing dbMAP, we invite you to come back in a couple of days and to check the docker container in the meanwhile.
-
 # Installation and dependencies
 
    Prior to installing dbMAP, make sure you have scikit-build and cmake available in your system. These are required for installation.
    ```
      $> sudo apt-get install cmake
      $> pip3 install scikit-build
-```
-   
+   ```
+   We're also going to need NMSlib for accelerated approximate nearest-neighbor search:
+   ```
+    $> pip3 install nmslib
+   ```
    dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
 
 # Usage - Python
-
-  dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. It takes three steps to run dbMAP on a high-dimensional matrix (such as a gene expression matrix):
-        
+ 
+  dbMAP consists of two main steps: an adaptive diffusion maps isotropic reproduction of the initial input, followed by an accelerated UMAP layout. dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. The adaptive diffusion reduction is recommended over PCA if data is significantly non-linear, and is useful for clustering and downstream analysis. The dbMAP layout is also useful for big data visualization. 
+  Here follows a simple example on using dbMAP:        
   ```
 from sklearn.datasets import load_digits
-import matplotlib.pyplot as plt
-import matplotlib.offsetbox as offsetbox
-import pandas as pd
+from scipy.sparse import csr_matrix
 import dbmap
-from dbmap.common import embedding_plot
 
-#Load some data
+# Load some data and convert to CSR for speed
 digits = load_digits()
-data = digits.data
-df = pd.DataFrame(digits.data)
+data = csr_matrix(digits.data)
+
+# 
 
 X = digits.data
 y = digits.target

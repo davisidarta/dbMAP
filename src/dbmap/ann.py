@@ -176,15 +176,12 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 import pandas as pd
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)
-                    
-            elif type(data) == 'numpy.ndarray':
-                data = csr_matrix(data)
 
         self.n_samples_fit_ = data.shape[0]
 
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
-        if (issparse(data) == True) and (not self.dense):
+        if (issparse(data) == True) and (not self.dense) and (not isinstance(data,np.ndarray)):
             self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
                                        data_type=nmslib.DataType.SPARSE_VECTOR)

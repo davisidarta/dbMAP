@@ -13,6 +13,7 @@ from sklearn.base import TransformerMixin, BaseEstimator
 from scipy.sparse import csr_matrix, find, issparse
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import train_test_split
+
 try:
     import nmslib
 except ImportError:
@@ -121,7 +122,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                  dense=False
                  ):
 
-
         self.n_neighbors = n_neighbors
         self.method = method
         self.metric = metric
@@ -170,15 +170,15 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 if isinstance(data, np.ndarray):
                     data = csr_matrix(data)
             if issparse(data) == False:
-                
+
                 print('Input data is ' + str(type(data)) + ' .Converting input to sparse...')
-                
+
                 import pandas as pd
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)
-            elif isinstance(data, np.ndarray):
+                    
+            elif type(data) == 'numpy.ndarray':
                 data = csr_matrix(data)
-            print('Input data:'+ str(type(data)))
 
         self.n_samples_fit_ = data.shape[0]
 
@@ -186,13 +186,13 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         if (issparse(data) == True) and (not self.dense):
             self.nmslib_ = nmslib.init(method=self.method,
-                                           space=self.space,
-                                           data_type=nmslib.DataType.SPARSE_VECTOR)
+                                       space=self.space,
+                                       data_type=nmslib.DataType.SPARSE_VECTOR)
 
         else:
             self.nmslib_ = nmslib.init(method=self.method,
-                                           space=self.space,
-                                           data_type=nmslib.DataType.DENSE_VECTOR)
+                                       space=self.space,
+                                       data_type=nmslib.DataType.DENSE_VECTOR)
 
         self.nmslib_.addDataPointBatch(data)
         start = time.time()
@@ -200,7 +200,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         end = time.time()
         print('Index-time parameters', 'M:', self.M, 'n_threads:', self.n_jobs, 'efConstruction:', self.efC, 'post:0')
         print('Indexing time = %f (sec)' % (end - start))
-
 
         return self
 
@@ -263,7 +262,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                                                        self.n_samples_fit_))
         x, y, dists = find(kneighbors_graph)
 
-        #Define gradients
+        # Define gradients
         grad = np.gradient(dists)
 
         if self.metric == 'cosine' or self.metric == 'cosine_sparse':
@@ -296,15 +295,12 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             grad = np.zeros(x.shape)
             grad[max_i] = np.sign(x[max_i] - y[max_i])
 
-
-
         end = time.time()
 
         print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
               (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
 
         return indices, distances, grad, kneighbors_graph
-
 
     def test_efficiency(self, data, data_use=0.1):
         """Test that NMSlibTransformer and KNeighborsTransformer give same results

@@ -35,7 +35,8 @@ class multiscale(TransformerMixin, BaseEstimator):
             self.n_eigs = np.argsort(vals[: (len(vals) - 1)] - vals[1:])[-1] + 1
             if self.n_eigs < 3:
                 self.n_eigs = np.argsort(vals[: (len(vals) - 1)] - vals[1:])[-2] + 3
-
+            if self.n_eigs < 3:
+                self.n_eigs = self.n_eigs + 3
             print('Automatically selected and multiscaled ' + str(round(self.n_eigs)) +
                   ' diffusion components.')
 

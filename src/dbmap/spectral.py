@@ -251,20 +251,26 @@ def multi_component_layout(
     return result
 
 
+
 def spectral_layout(data, graph, dim, random_state, metric="euclidean", metric_kwds={}):
     """Given a graph compute the spectral embedding of the graph. This is
     simply the eigenvectors of the laplacian of the graph. Here we use the
     normalized laplacian.
+
     Parameters
     ----------
     data: array of shape (n_samples, n_features)
         The source data
+
     graph: sparse matrix
         The (weighted) adjacency matrix of the graph as a sparse matrix.
+
     dim: int
         The dimension of the space into which to embed.
+
     random_state: numpy RandomState or equivalent
         A state capable being used as a numpy random state.
+
     Returns
     -------
     embedding: array of shape (n_vertices, dim)
@@ -292,7 +298,7 @@ def spectral_layout(data, graph, dim, random_state, metric="euclidean", metric_k
     # Normalized Laplacian
     I = scipy.sparse.identity(graph.shape[0], dtype=np.float64)
     D = scipy.sparse.spdiags(
-        1.0 / np.sqrt(diag_data), 0, graph.shape[0], graph.shape[0]
+        1.0 / np.sqrt(diag_data), 0, graph.shape[0], graph.shape[0] + 1e-6
     )
     L = I - D * graph * D
 

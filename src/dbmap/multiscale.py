@@ -3,7 +3,6 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from kneed import KneeLocator
 
-
 class multiscale(TransformerMixin, BaseEstimator):
 
     def __init__(self,
@@ -35,7 +34,7 @@ class multiscale(TransformerMixin, BaseEstimator):
             vals = np.ravel(res["EigenValues"])
             self.n_eigs = np.argsort(vals[: (len(vals) - 1)] - vals[1:])[-1] + 1
             if self.n_eigs < 3:
-                self.n_eigs = np.argsort(vals[: (len(vals) - 1)] - vals[1:])[-2] + 1
+                self.n_eigs = np.argsort(vals[: (len(vals) - 1)] - vals[1:])[-2] + 3
 
             print('Automatically selected and multiscaled ' + str(round(self.n_eigs)) +
                   ' diffusion components.')

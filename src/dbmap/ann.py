@@ -170,7 +170,9 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 if isinstance(data, np.ndarray):
                     data = csr_matrix(data)
             if issparse(data) == False:
-                print('Converting input to sparse...')
+                
+                print('Input data is ' + str(type(data)) + ' .Converting input to sparse...')
+                
                 import pandas as pd
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)

@@ -200,10 +200,7 @@ class Diffusor(TransformerMixin):
         print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
-        return self.res['StructureComponents']
-    
-    def return_dict(self):
-        return self.res
+        return self.res['StructureComponents'], self.res
 
     def ind_dist_grad(self, data, n_eigs=None, dense=False):
         """Effectively computes on data. Also returns the normalized diffusion distances,

@@ -6,18 +6,23 @@ from warnings import warn
 
 if sys.version_info.major != 3:
     raise RuntimeError('dbMAP requires Python 3')
-if sys.version_info.minor < 6:
-    warn('Analysis methods were developed using Python 3.6')
 
 # get version
 with open('src/dbmap/version.py') as f:
     exec(f.read())
 
+# Set README as project description
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+
 setup(name='dbmap',
-      version=__version__,# read in from the exec of version.py; ignore error
-      description='dbMAP - a generalized approach for dimensionality reduction aimed at single-cell data.',
+      version='1.1.1',
+      description='dbMAP - fast, accurate and generalized dimensional reduction for explorative data analysis',
+      long_description=long_description,
+      long_description_content_type="text/markdown",
       url='https://github.com/davisidarta/dbMAP',
-      download_url='https://github.com/davisidarta/dbMAP/archive/1.0.tar.gz',
+      download_url='https://github.com/davisidarta/dbMAP/archive/1.1.1.tar.gz',
       author='Davi Sidarta-Oliveira',
       author_email='davisidarta@gmail.com',
       package_dir={'': 'src'},
@@ -36,6 +41,7 @@ setup(name='dbmap',
           'seaborn>=0.8.1',
           'tzlocal',
           'scanpy',
-          'scikit-build'
+          'scikit-build',
+          'nmslib'
       ],
       )

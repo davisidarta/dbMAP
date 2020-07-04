@@ -107,7 +107,7 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
    # TODO: GRAPH_LAYOUT UTILITY
    
   ```
- ![dbMAP handwritten digits visualization](https://github.com/davisidarta/py_dbMAP/blob/master/Digits.tif)
+ ![dbMAP handwritten digits visualization](https://github.com/davisidarta/py_dbMAP/blob/master/Digits.png)
      
 
 # Citation

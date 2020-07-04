@@ -25,6 +25,7 @@ setup(name='dbmap',
       download_url='https://github.com/davisidarta/dbMAP/archive/1.1.1.tar.gz',
       author='Davi Sidarta-Oliveira',
       author_email='davisidarta@gmail.com',
+      keywords=['Dimensionality Reduction', 'Big Data', 'Diffusion Maps', 'Nearest-neighbors'],
       package_dir={'': 'src'},
       packages=['dbmap'],
       install_requires=[

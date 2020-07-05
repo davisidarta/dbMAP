@@ -316,3 +316,57 @@ class Diffusor(TransformerMixin):
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
         return self.ind, self.dists, self.grad, self.graph
+    
+    def transform_dict(self, data, n_eigs=None):
+        """
+        :return: Dictionary containing normalized and multiscaled Diffusion Components 
+        (['StructureComponents']), their eigenvalues ['EigenValues'], non-normalized
+        components (['EigenVectors']) and the kernel used for transformation of distances
+        into affinities (['kernel']). 
+        """
+        
+        self.n_eigs = n_eigs
+
+        # Diffusion through Markov chain
+        D = np.ravel(self.kernel.sum(axis=1))
+        if self.alpha > 0:
+            # L_alpha
+            D[D != 0] = D[D != 0] ** (-self.alpha)
+            mat = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N])
+            kernel = mat.dot(self.kernel).dot(mat)
+            D = np.ravel(kernel.sum(axis=1))
+
+        D[D != 0] = 1 / D[D != 0]
+
+        # Setting the diffusion operator
+        T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
+
+        # Eigen value decomposition
+        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
+        D = np.real(D)
+        V = np.real(V)
+        inds = np.argsort(D)[::-1]
+        D = D[inds]
+        V = V[:, inds]
+
+        # Normalize by the first diffusion component
+        for i in range(V.shape[1]):
+            V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
+
+        # Create the results dictionary
+        self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
+        self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
+        if not issparse(data):
+            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
+        self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
+
+        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        mms = multi.fit(self.res)
+        mms = mms.transform(self.res)
+        self.res['StructureComponents'] = mms
+
+        end = time.time()
+        print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
+              (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
+
+        return self.res

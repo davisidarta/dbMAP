@@ -11,6 +11,7 @@ NPY_INFINITY = np.inf
 INT32_MIN = np.iinfo(np.int32).min + 1
 INT32_MAX = np.iinfo(np.int32).max - 1
 
+
 def fuzzy_simplicial_set_nmslib(
         X,
         n_neighbors,
@@ -403,7 +404,7 @@ def approximate_n_neighbors(data,
                                                                               n_jobs=n_jobs,
                                                                               efC=efC,
                                                                               efS=efS,
-                                                                              M=M, dense=dense).ind_dist_grad(data)
+                                                                              M=M, dense=dense).fit(data).ind_dist_grad(data)
 
     return knn_inds, knn_distances
 

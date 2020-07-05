@@ -200,8 +200,7 @@ class Diffusor(TransformerMixin):
         print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
-        return self.res['StructureComponents'], self.res
-
+        return self.res['StructureComponents']
     def ind_dist_grad(self, data, n_eigs=None, dense=False):
         """Effectively computes on data. Also returns the normalized diffusion distances,
         indexes and gradient obtained by approximating the Laplace-Beltrami operator.
@@ -316,15 +315,15 @@ class Diffusor(TransformerMixin):
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
         return self.ind, self.dists, self.grad, self.graph
-    
+
     def transform_dict(self, data, n_eigs=None):
         """
-        :return: Dictionary containing normalized and multiscaled Diffusion Components 
+        :return: Dictionary containing normalized and multiscaled Diffusion Components
         (['StructureComponents']), their eigenvalues ['EigenValues'], non-normalized
         components (['EigenVectors']) and the kernel used for transformation of distances
-        into affinities (['kernel']). 
+        into affinities (['kernel']).
         """
-        
+
         self.n_eigs = n_eigs
 
         # Diffusion through Markov chain

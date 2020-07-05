@@ -398,13 +398,15 @@ def approximate_n_neighbors(data,
     else:
         data = csr_matrix(data)
 
-    knn_inds, knn_distances, grad, kneighbors_graph = dm.ann.NMSlibTransformer(n_neighbors=n_neighbors,
-                                                                              metric=metric,
-                                                                              method=method,
-                                                                              n_jobs=n_jobs,
-                                                                              efC=efC,
-                                                                              efS=efS,
-                                                                              M=M, dense=dense).fit(data).ind_dist_grad(data)
+    anbrs = dm.ann.NMSlibTransformer(n_neighbors=n_neighbors,
+                                     metric=metric,
+                                     method=method,
+                                     n_jobs=n_jobs,
+                                     efC=efC,
+                                     efS=efS,
+                                     M=M, dense=dense).fit(data)
+    
+    knn_inds, knn_distances, grad, knn_graph = anbrs.ind_dist_grad(data)
 
     return knn_inds, knn_distances
 

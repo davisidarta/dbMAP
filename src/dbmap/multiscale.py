@@ -48,7 +48,7 @@ class multiscale(TransformerMixin, BaseEstimator):
         # Scales the data
         use_eigs = list(range(1, self.n_eigs))
         ev = res["EigenValues"]
-        eig_vals = np.ravel(ev.reindex([use_eigs]))
+        eig_vals = np.ravel(ev.loc[use_eigs])
         data = res["EigenVectors"].values[:, use_eigs] * (eig_vals / (1 - eig_vals))
         data = pd.DataFrame(data, index=res["EigenVectors"].index)
 

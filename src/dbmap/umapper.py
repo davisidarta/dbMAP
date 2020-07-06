@@ -49,7 +49,9 @@ from umap.nndescent import (
     initialise_search,
 )
 from umap.rp_tree import rptree_leaf_array, make_forest
-from umap.spectral import spectral_layout
+
+from . import spectral
+
 from umap.utils import deheap_sort, submatrix
 from umap.layouts import (
     optimize_layout_euclidean,
@@ -1254,7 +1256,7 @@ def simplicial_set_embedding(
         ).astype(np.float32)
     elif isinstance(init, str) and init == "spectral":
         # We add a little noise to avoid local minima for optimization to come
-        initialisation = spectral_layout(
+        initialisation = spectral.spectral_layout(
             data,
             graph,
             n_components,
@@ -1459,17 +1461,17 @@ class UMAP(BaseEstimator):
                 -'jaccard'
                 -'jaccard_sparse'
                 -'jansen-shan'
-    nmslib_n_jobs: int (optional, default None)
-        Number of threads to use for approximate-nearest neighbor search.
+    nmslib_n_jobs: int (optional, default 10)
+        Defines the number of threads to use in computation of nearest neighbors.
     nmslib_efC: int (optional, default 100)
-        increasing this value improves the quality of a constructed graph and leads to higher
+        Increasing this value improves the quality of a constructed graph and leads to higher
         accuracy of search. However this also leads to longer indexing times. A reasonable
         range is 100-2000.
     nmslib_efS: int (optional, default 100)
-        similarly to efC, improving this value improves recall at the expense of longer
+        Similarly to efC, improving this value improves recall at the expense of longer
         retrieval time. A reasonable range is 100-2000.
     nmslib_M: int (optional, default 30).
-        defines the maximum number of neighbors in the zero and above-zero layers during HSNW
+        Defines the maximum number of neighbors in the zero and above-zero layers during HSNW
         (Hierarchical Navigable Small World Graph). However, the actual default maximum number
         of neighbors for the zero layer is 2*M. For more information on HSNW, please check
         https://arxiv.org/abs/1603.09320. HSNW is implemented in python via NMSLIB. Please check

@@ -298,7 +298,7 @@ def spectral_layout(data, graph, dim, random_state, metric="euclidean", metric_k
     # Normalized Laplacian
     I = scipy.sparse.identity(graph.shape[0], dtype=np.float64)
     D = scipy.sparse.spdiags(
-        1.0 / np.sqrt(diag_data), 0, graph.shape[0], graph.shape[0] + 1e-6
+        1.0 / np.sqrt(diag_data), 0, graph.shape[0], graph.shape[0]
     )
     L = I - D * graph * D
 

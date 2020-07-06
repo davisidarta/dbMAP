@@ -293,8 +293,6 @@ class Diffusor(TransformerMixin):
         # Create the results dictionary
         self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
         self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
-        if not issparse(data):
-            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
         multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
@@ -355,8 +353,6 @@ class Diffusor(TransformerMixin):
         # Create the results dictionary
         self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
         self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
-        if not issparse(data):
-            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
         multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)

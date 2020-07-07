@@ -72,11 +72,11 @@ class Diffusor(TransformerMixin):
                  alpha=0.5,
                  n_jobs=10,
                  ann=True,
-                 ann_dist='angular_sparse',
+                 ann_dist='cosine_sparse',
                  M=30,
                  efC=100,
                  efS=100,
-                 knn_dist='euclidean',
+                 knn_dist='cosine',
                  kernel_use='sidarta',
                  sensitivity=1
                  ):

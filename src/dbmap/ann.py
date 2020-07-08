@@ -340,3 +340,80 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         print('kNN recall %f' % recall)
 
 
+    def fast_x_y_dist_grad(self, data, x, y):
+        #
+        # # EXPERIMENTAL
+        #
+        start = time.time()
+        n_samples_transform = data.shape[0]
+        self.nmslib_.setQueryTimeParams(query_time_params)
+        # For compatibility reasons, as each sample is considered as its own
+        # neighbor, one extra neighbor will be computed.
+        self.n_neighbors = self.n_neighbors + 1
+        results = self.nmslib_.knnQueryBatch(data, k=self.n_neighbors,
+                                             num_threads=self.n_jobs)
+        indices, distances = zip(*results)
+        indices, distances = np.vstack(indices), np.vstack(distances)
+
+        query_qty = data.shape[0]
+
+        if self.metric == 'sqeuclidean':
+            distances **= 2
+
+        indptr = np.arange(0, n_samples_transform * self.n_neighbors + 1,
+                           self.n_neighbors)
+        kneighbors_graph = csr_matrix((distances.ravel(), indices.ravel(),
+                                       indptr), shape=(n_samples_transform,
+                                                       self.n_samples_fit_))
+        x_all, y_all, dists = find(kneighbors_graph)
+        x = x_all[x]
+        y = y_all[y]
+        # Define gradients
+        self.grad = np.gradient(dists)
+        result = 0.0
+        norm_x = 0.0
+        norm_y = 0.0
+        if self.metric == 'cosine' or self.metric == 'cosine_sparse':
+
+            for i in range(x.shape[0]):
+                result += x[i] * y[i]
+                norm_x += x[i] ** 2
+                norm_y += y[i] ** 2
+
+            if norm_x == 0.0 and norm_y == 0.0:
+                self.dist = 0.0
+            elif norm_x == 0.0 or norm_y == 0.0:
+                self.dist = 1.0
+            else:
+                self.dist = 1.0 - (result / np.sqrt(norm_x * norm_y))
+
+            for i in range(x.shape[0]):
+                norm_x += x[i] ** 2
+                norm_y += y[i] ** 2
+            if norm_x == 0.0 and norm_y == 0.0:
+                self.grad = np.zeros(x.shape)
+            elif norm_x == 0.0 or norm_y == 0.0:
+                self.grad = np.zeros(x.shape)
+            else:
+                self.grad = -(x * dists - y * norm_x) / np.sqrt(norm_x ** 3 * norm_y)
+
+        if self.metric == 'euclidean' or self.metric == 'euclidean_sparse':
+            for i in range(x.shape[0]):
+                self.dist += (x[i] - y[i]) ** 2
+            self.grad = x - y / (1e-6 + np.sqrt(self.dist))
+
+        if self.metric == 'sqeuclidean':
+            self.grad = x - y / (1e-6 + dists)
+
+        if self.metric == 'linf' or self.metric == 'linf_sparse':
+            result = 0.0
+            max_i = 0
+            for i in range(x.shape[0]):
+                v = np.abs(x[i] - y[i])
+                if v > result:
+                    result = dists
+                    max_i = i
+            self.grad = np.zeros(x.shape)
+            self.grad[max_i] = np.sign(x[max_i] - y[max_i])
+
+        return self.dist, self.grad

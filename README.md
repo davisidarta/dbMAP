@@ -14,10 +14,12 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
      $> sudo apt-get install cmake
      $> pip3 install scikit-build
    ```
-   We're also going to need NMSlib for accelerated approximate nearest-neighbor search:
+   We're also going to need NMSlib for really fast approximate nearest-neighbor search which powers dbMAP escalability:
    ```
     $> pip3 install nmslib
    ```
+   You can read more about NMSlib  ![here](https://github.com/nmslib/nmslib), and check more on the available distances and spaces documentation ![here](https://github.com/nmslib/nmslib/blob/master/manual/spaces.md). dbMAP implements utility functions on NMSlib that make it more genrally extendable to machine-leraning workflows, and we acknowledge the nmslib community for contributing with this project for their insights during this process.
+   
    dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
 
 # Usage - Python
@@ -105,6 +107,13 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
    # Embed graph with vanilla UMAP:
    emb = dm.map.UMAP().fit(transform(res.to_numpy(dtype='float32'))
    
+   plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
+   plt.gca().set_aspect('equal', 'datalim')
+   plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
+   plt.title('MSDCs on UMAP projection of the Digits dataset', fontsize=24)
+   plt.show()
+   
+   
    # TODO: GRAPH_LAYOUT UTILITY
    
   ```
@@ -113,10 +122,12 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
 
 # Citation
 
-We kindly ask that you cite the following if you use dbMAP for your work:
+We kindly ask that you cite dbMAP and the manuscript that lead to NMSlib if you use these algorithms for your work:
 
 ```
 Sidarta-Oliveira, Davi and Velloso, Licio, Comprehensive Visualization of High-Dimensional Single-Cell Data With Diffusion-Based Manifold Approximation and Projection (dbMAP). CELL-REPORTS-D-20-01731. Available at SSRN: https://ssrn.com/abstract=3582067 or http://dx.doi.org/10.2139/ssrn.3582067
+
+Malkov, Y.A., Yashunin, D.A.. (2016). Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs. CoRR, abs/1603.09320. [BibTex]
 
 ```
 

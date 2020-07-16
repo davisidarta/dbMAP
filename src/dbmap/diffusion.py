@@ -79,7 +79,7 @@ class Diffusor(TransformerMixin):
                  efS=100,
                  knn_dist='cosine',
                  kernel_use='sidarta',
-                 verbose=True
+                 verbose=False
                  ):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
@@ -94,7 +94,7 @@ class Diffusor(TransformerMixin):
         self.kernel_use = kernel_use
         self.verbose = verbose
 
-    def fit(self, data, plot_knee=False):
+    def fit(self, data):
         """Effectively computes on data.
         :param plot_knee: Whether to plot the scree plot of diffusion eigenvalues.
         :param data: input data. Takes in numpy arrays and scipy csr sparse matrices.
@@ -102,7 +102,6 @@ class Diffusor(TransformerMixin):
         parameters that can make the process faster and more informational depending
         on your dataset. Read more at https://github.com/davisidarta/dbmap
         """
-        self.plot_knee = plot_knee
         self.start_time = time.time()
         self.N = data.shape[0]
         if self.ann:
@@ -190,9 +189,8 @@ class Diffusor(TransformerMixin):
             self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee)
-        mms = multi.fit(self.res)
-        mms = mms.transform(self.res)
+        multi = multiscale.multiscale(n_eigs=self.n_eigs)
+        mms = multi.fit(self.res).transform(self.res)
         self.res['StructureComponents'] = mms
 
         end = time.time()
@@ -222,7 +220,8 @@ class Diffusor(TransformerMixin):
                                       n_jobs=self.n_jobs,
                                       M=self.M,
                                       efC=self.efC,
-                                      efS=self.efS)
+                                      efS=self.efS,
+                                      verbose=self.verbose)
             anbrs = anbrs.fit(data)
             self.ind, self.dists, self.grad, kneighbors_graph = anbrs.ind_dist_grad(data)
             x, y, self.dists = find(self.dists)
@@ -305,14 +304,18 @@ class Diffusor(TransformerMixin):
                                   n_jobs=self.n_jobs,
                                   M=self.M,
                                   efC=self.efC,
-                                  efS=self.efS, dense=True).fit(mms)
-        self.ind, self.dists, self.grad, self.graph = anbrs.ind_dist_grad(mms)
+                                  efS=self.efS,
+                                  dense=True,
+                                  verbose=self.verbose
+                                      ).fit(mms)
+        
+        ind, dists, grad, graph = anbrs.ind_dist_grad(mms)
 
         end = time.time()
         print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
-        return self.ind, self.dists, self.grad, self.graph
+        return ind, dists, grad, graph
 
     def transform_dict(self, data, n_eigs=None):
         """

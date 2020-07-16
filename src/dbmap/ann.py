@@ -29,86 +29,90 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
     an escalable approximate k-nearest-neighbors graph on spaces defined by nmslib.
     Read more about nmslib and its various available metrics at
     https://github.com/nmslib/nmslib.
-
     Calling 'nn <- NMSlibTransformer()' initializes the class with
      neighbour search parameters.
-
     Parameters
     ----------
-    n_neighbors: number of nearest-neighbors to look for. In practice,
-                     this should be considered the average neighborhood size and thus vary depending
-                     on your number of features, samples and data intrinsic dimensionality. Reasonable values
-                     range from 5 to 100. Smaller values tend to lead to increased graph structure
-                     resolution, but users should beware that a too low value may render granulated and vaguely
-                     defined neighborhoods that arise as an artifact of downsampling. Defaults to 30. Larger
-                     values can slightly increase computational time.
-
-    metric: accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
-                or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
-                -'sqeuclidean'
-                -'euclidean'
-                -'euclidean_sparse'
-                -'l1'
-                -'l1_sparse'
-                -'cosine'
-                -'cosine_sparse'
-                -'angular'
-                -'angular_sparse'
-                -'negdotprod'
-                -'negdotprod_sparse'
-                -'levenshtein'
-                -'hamming'
-                -'jaccard'
-                -'jaccard_sparse'
-                -'jansen-shan'
-
-    method: approximate-neighbor search method. Defaults to 'hsnw' (usually the fastest).
-
-    n_jobs: number of threads to be used in computation. Defaults to 10 (~5 cores).
-
-    efC: increasing this value improves the quality of a constructed graph and leads to higher
-             accuracy of search. However this also leads to longer indexing times. A reasonable
-             range is 100-2000. Defaults to 100.
-
-    efS: similarly to efC, improving this value improves recall at the expense of longer
-             retrieval time. A reasonable range is 100-2000.
-
-    M: defines the maximum number of neighbors in the zero and above-zero layers during HSNW
-           (Hierarchical Navigable Small World Graph). However, the actual default maximum number
-           of neighbors for the zero layer is 2*M. For more information on HSNW, please check
-           https://arxiv.org/abs/1603.09320. HSNW is implemented in python via NMSLIB. Please check
-           more about NMSLIB at https://github.com/nmslib/nmslib .
-
-    dense: Whether to force the algorithm to use dense data, such as np.ndarrays and pandas DataFrames.
-
-    :returns: Class for really fast approximate-nearest-neighbors search.
-
+    n_neighbors: int (optional, default 30)
+        number of nearest-neighbors to look for. In practice,
+        this should be considered the average neighborhood size and thus vary depending
+        on your number of features, samples and data intrinsic dimensionality. Reasonable values
+        range from 5 to 100. Smaller values tend to lead to increased graph structure
+        resolution, but users should beware that a too low value may render granulated and vaguely
+        defined neighborhoods that arise as an artifact of downsampling. Defaults to 30. Larger
+        values can slightly increase computational time.
+    metric: str (optional, default 'cosine_sparse')
+        accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
+        or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+        -'sqeuclidean'
+        -'euclidean'
+        -'euclidean_sparse'
+        -'l1'
+        -'l1_sparse'
+        -'cosine'
+        -'cosine_sparse'
+        -'angular'
+        -'angular_sparse'
+        -'negdotprod'
+        -'negdotprod_sparse'
+        -'levenshtein'
+        -'hamming'
+        -'jaccard'
+        -'jaccard_sparse'
+        -'jansen-shan'
+    method: str (optional, default 'hsnw')
+        approximate-neighbor search method. Available methods include:
+                -'hnsw' : a Hierarchical Navigable Small World Graph.
+                -'sw-graph' : a Small World Graph.
+                -'vp-tree' : a Vantage-Point tree with a pruning rule adaptable to non-metric distances.
+                -'napp' : a Neighborhood APProximation index.
+                -'simple_invindx' : a vanilla, uncompressed, inverted index, which has no parameters.
+                -'brute_force' : a brute-force search, which has no parameters.
+        'hnsw' is usually the fastest method, followed by 'sw-graph' and 'vp-tree'.
+    n_jobs: int (optional, default 1)
+        number of threads to be used in computation. Defaults to 1. The algorithm is highly
+        scalable to multithreading.
+    efC: int (optional, default 100)
+        A 'hnsw' parameter. Increasing this value improves the quality of a constructed graph
+        and leads to higher accuracy of search. However this also leads to longer indexing times.
+        A reasonable range for this parameter is 50-2000.
+    efS: int (optional, default 100)
+        A 'hnsw' parameter. Similarly to efC, increasing this value improves recall at the
+        expense of longer retrieval time. A reasonable range for this parameter is 100-2000.
+    M: int (optional, default 30)
+        defines the maximum number of neighbors in the zero and above-zero layers during HSNW
+        (Hierarchical Navigable Small World Graph). However, the actual default maximum number
+        of neighbors for the zero layer is 2*M.  A reasonable range for this parameter
+        is 5-100. For more information on HSNW, please check https://arxiv.org/abs/1603.09320.
+        HSNW is implemented in python via NMSlib. Please check more about NMSlib at https://github.com/nmslib/nmslib.
+    dense: bool (optional, default False)
+        Whether to force the algorithm to use dense data, such as np.ndarrays and pandas DataFrames.
+    Returns
+    ---------
+    Class for really fast approximate-nearest-neighbors search.
     Example
     -------------
-
     import numpy as np
     from sklearn.datasets import load_digits
     from scipy.sparse import csr_matrix
     from dbmap.ann import NMSlibTransformer
-
+    #
     # Load the MNIST digits data, convert to sparse for speed
     digits = load_digits()
     data = csr_matrix(digits)
-
+    #
     # Start class with parameters
     nn = NMSlibTransformer()
     nn = nn.fit(data)
-
+    #
     # Obtain kNN graph
     knn = nn.transform(data)
-
+    #
     # Obtain kNN indices, distances and distance gradient
     ind, dist, grad = nn.ind_dist_grad(data)
-
+    #
     # Test for recall efficiency during approximate nearest neighbors search
     test = nn.test_efficiency(data)
-
-
     """
 
     def __init__(self,
@@ -119,7 +123,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                  efC=100,
                  efS=100,
                  M=30,
-                 dense=False
+                 dense=False,
+                 verbose=False
                  ):
 
         self.n_neighbors = n_neighbors
@@ -150,6 +155,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             'jansen-shan': 'jsmetrfastapprox'
         }[self.metric]
         self.dense = dense
+        self.verbose = verbose
 
     def fit(self, data):
         # see more metrics in the manual
@@ -166,13 +172,13 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         else:
             if issparse(data) == True:
-                print('Sparse input. Proceding without converting...')
+                if self.verbose:
+                    print('Sparse input. Proceding without converting...')
                 if isinstance(data, np.ndarray):
                     data = csr_matrix(data)
             if issparse(data) == False:
-
-                print('Input data is ' + str(type(data)) + ' .Converting input to sparse...')
-
+                if self.verbose:
+                    print('Input data is ' + str(type(data)) + ' .Converting input to sparse...')
                 import pandas as pd
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)
@@ -181,7 +187,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
-        if (issparse(data) == True) and (not self.dense) and (not isinstance(data,np.ndarray)):
+        if (issparse(data) == True) and (not self.dense) and (not isinstance(data, np.ndarray)):
             self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
                                        data_type=nmslib.DataType.SPARSE_VECTOR)
@@ -195,8 +201,10 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         start = time.time()
         self.nmslib_.createIndex(index_time_params)
         end = time.time()
-        print('Index-time parameters', 'M:', self.M, 'n_threads:', self.n_jobs, 'efConstruction:', self.efC, 'post:0')
-        print('Indexing time = %f (sec)' % (end - start))
+        if self.verbose:
+            print('Index-time parameters', 'M:', self.M, 'n_threads:', self.n_jobs, 'efConstruction:', self.efC,
+                  'post:0')
+            print('Indexing time = %f (sec)' % (end - start))
 
         return self
 
@@ -204,7 +212,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         start = time.time()
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}
-        print('Query-time parameter efSearch:', self.efS)
+        if self.verbose:
+            print('Query-time parameter efSearch:', self.efS)
         self.nmslib_.setQueryTimeParams(query_time_params)
 
         # For compatibility reasons, as each sample is considered as its own
@@ -228,8 +237,9 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                                        indptr), shape=(n_samples_transform,
                                                        self.n_samples_fit_))
         end = time.time()
-        print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
-              (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
+        if self.verbose:
+            print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
+                  (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
 
         return kneighbors_graph
 
@@ -237,7 +247,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         start = time.time()
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}
-        print('Query-time parameter efSearch:', self.efS)
+        if self.verbose:
+            print('Query-time parameter efSearch:', self.efS)
         self.nmslib_.setQueryTimeParams(query_time_params)
         # For compatibility reasons, as each sample is considered as its own
         # neighbor, one extra neighbor will be computed.
@@ -260,7 +271,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         x, y, dists = find(kneighbors_graph)
 
         # Define gradients
-        grad = np.gradient(dists)
+        grad = []
 
         if self.metric == 'cosine' or self.metric == 'cosine_sparse':
             norm_x = 0.0
@@ -294,8 +305,9 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         end = time.time()
 
-        print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
-              (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
+        if self.verbose:
+            print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
+                  (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
 
         return indices, distances, grad, kneighbors_graph
 
@@ -308,7 +320,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         (dismiss, test) = train_test_split(data, test_size=self.data_use)
         query_time_params = {'efSearch': self.efS}
-        print('Setting query-time parameters', query_time_params)
+        if self.verbose:
+            print('Setting query-time parameters', query_time_params)
         self.nmslib_.setQueryTimeParams(query_time_params)
 
         # For compatibility reasons, as each sample is considered as its own
@@ -318,8 +331,9 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         ann_results = self.nmslib_.knnQueryBatch(data, k=self.n_neighbors,
                                                  num_threads=self.n_jobs)
         end = time.time()
-        print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
-              (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
+        if self.verbose:
+            print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
+                  (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
 
         # Use sklearn for exact neighbor search
         start = time.time()
@@ -328,8 +342,9 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                                 algorithm='brute').fit(data)
         knn = nbrs.kneighbors(data)
         end = time.time()
-        print('brute-force gold-standart kNN time total=%f (sec), per query=%f (sec)' %
-              (end - start, float(end - start) / query_qty))
+        if self.verbose:
+            print('brute-force gold-standart kNN time total=%f (sec), per query=%f (sec)' %
+                  (end - start, float(end - start) / query_qty))
 
         recall = 0.0
         for i in range(0, query_qty):
@@ -338,82 +353,3 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             recall = recall + float(len(correct_set.intersection(ret_set))) / len(correct_set)
         recall = recall / query_qty
         print('kNN recall %f' % recall)
-
-
-    def fast_x_y_dist_grad(self, data, x, y):
-        #
-        # # EXPERIMENTAL
-        #
-        start = time.time()
-        n_samples_transform = data.shape[0]
-        self.nmslib_.setQueryTimeParams(query_time_params)
-        # For compatibility reasons, as each sample is considered as its own
-        # neighbor, one extra neighbor will be computed.
-        self.n_neighbors = self.n_neighbors + 1
-        results = self.nmslib_.knnQueryBatch(data, k=self.n_neighbors,
-                                             num_threads=self.n_jobs)
-        indices, distances = zip(*results)
-        indices, distances = np.vstack(indices), np.vstack(distances)
-
-        query_qty = data.shape[0]
-
-        if self.metric == 'sqeuclidean':
-            distances **= 2
-
-        indptr = np.arange(0, n_samples_transform * self.n_neighbors + 1,
-                           self.n_neighbors)
-        kneighbors_graph = csr_matrix((distances.ravel(), indices.ravel(),
-                                       indptr), shape=(n_samples_transform,
-                                                       self.n_samples_fit_))
-        x_all, y_all, dists = find(kneighbors_graph)
-        x = x_all[x]
-        y = y_all[y]
-        # Define gradients
-        self.grad = np.gradient(dists)
-        result = 0.0
-        norm_x = 0.0
-        norm_y = 0.0
-        if self.metric == 'cosine' or self.metric == 'cosine_sparse':
-
-            for i in range(x.shape[0]):
-                result += x[i] * y[i]
-                norm_x += x[i] ** 2
-                norm_y += y[i] ** 2
-
-            if norm_x == 0.0 and norm_y == 0.0:
-                self.dist = 0.0
-            elif norm_x == 0.0 or norm_y == 0.0:
-                self.dist = 1.0
-            else:
-                self.dist = 1.0 - (result / np.sqrt(norm_x * norm_y))
-
-            for i in range(x.shape[0]):
-                norm_x += x[i] ** 2
-                norm_y += y[i] ** 2
-            if norm_x == 0.0 and norm_y == 0.0:
-                self.grad = np.zeros(x.shape)
-            elif norm_x == 0.0 or norm_y == 0.0:
-                self.grad = np.zeros(x.shape)
-            else:
-                self.grad = -(x * dists - y * norm_x) / np.sqrt(norm_x ** 3 * norm_y)
-
-        if self.metric == 'euclidean' or self.metric == 'euclidean_sparse':
-            for i in range(x.shape[0]):
-                self.dist += (x[i] - y[i]) ** 2
-            self.grad = x - y / (1e-6 + np.sqrt(self.dist))
-
-        if self.metric == 'sqeuclidean':
-            self.grad = x - y / (1e-6 + dists)
-
-        if self.metric == 'linf' or self.metric == 'linf_sparse':
-            result = 0.0
-            max_i = 0
-            for i in range(x.shape[0]):
-                v = np.abs(x[i] - y[i])
-                if v > result:
-                    result = dists
-                    max_i = i
-            self.grad = np.zeros(x.shape)
-            self.grad[max_i] = np.sign(x[max_i] - y[max_i])
-
-        return self.dist, self.grad

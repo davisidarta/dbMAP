@@ -43,10 +43,11 @@ class Diffusor(TransformerMixin):
 
     n_jobs : Number of threads to use in calculations. Defaults to all but one.
 
-    sensitivity : Sensitivity to select eigenvectors if diff_normalization is set to 'knee'. Useful when dealing wit
 
-    :returns: Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
-             resulting components to use during Multiscaling.
+    Returns
+    -------------
+        Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
+        resulting components to use during Multiscaling.
 
     Example
     -------------
@@ -78,7 +79,7 @@ class Diffusor(TransformerMixin):
                  efS=100,
                  knn_dist='cosine',
                  kernel_use='sidarta',
-                 sensitivity=1
+                 verbose=True
                  ):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
@@ -91,7 +92,7 @@ class Diffusor(TransformerMixin):
         self.efS = efS
         self.knn_dist = knn_dist
         self.kernel_use = kernel_use
-        self.sensitivity = sensitivity
+        self.verbose = verbose
 
     def fit(self, data, plot_knee=False):
         """Effectively computes on data.
@@ -103,19 +104,17 @@ class Diffusor(TransformerMixin):
         """
         self.plot_knee = plot_knee
         self.start_time = time.time()
-
-
-
         self.N = data.shape[0]
         if self.ann:
             # Construct an approximate k-nearest-neighbors graph
             anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
-                                      metric=self.ann_dist,
-                                      method='hnsw',
-                                      n_jobs=self.n_jobs,
-                                      M=self.M,
-                                      efC=self.efC,
-                                      efS=self.efS)
+                                          metric=self.ann_dist,
+                                          method='hnsw',
+                                          n_jobs=self.n_jobs,
+                                          M=self.M,
+                                          efC=self.efC,
+                                          efS=self.efS,
+                                          verbose=self.verbose)
             anbrs = anbrs.fit(data)
             knn = anbrs.transform(data)
             # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
@@ -145,7 +144,7 @@ class Diffusor(TransformerMixin):
 
         if self.kernel_use == 'sidarta':
             # X, y specific stds
-            dists = dists - (dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
+            dists = dists - (dists / adaptive_std[x])  # Normalize by relative contribution to neighborhood size.
 
         W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
@@ -191,16 +190,18 @@ class Diffusor(TransformerMixin):
             self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee)
         mms = multi.fit(self.res)
         mms = mms.transform(self.res)
         self.res['StructureComponents'] = mms
 
         end = time.time()
-        print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
-              (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
+        if self.verbose:
+            print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
+                  (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
         return self.res['StructureComponents']
+
     def ind_dist_grad(self, data, n_eigs=None, dense=False):
         """Effectively computes on data. Also returns the normalized diffusion distances,
         indexes and gradient obtained by approximating the Laplace-Beltrami operator.
@@ -276,7 +277,6 @@ class Diffusor(TransformerMixin):
         # Eigen value decomposition
         if dense:
             from scipy.linalg import eig
-
             D, V = eig(T.toarray())
         else:
             D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
@@ -295,7 +295,7 @@ class Diffusor(TransformerMixin):
         self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        multi = multiscale.multiscale(n_eigs=self.n_eigs)
         mms = multi.fit(self.res)
         mms = mms.transform(self.res)
 
@@ -355,7 +355,7 @@ class Diffusor(TransformerMixin):
         self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs, plot=self.plot_knee, sensitivity=self.sensitivity)
+        multi = multiscale.multiscale(n_eigs=self.n_eigs)
         mms = multi.fit(self.res)
         mms = mms.transform(self.res)
         self.res['StructureComponents'] = mms

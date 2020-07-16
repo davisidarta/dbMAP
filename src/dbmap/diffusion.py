@@ -42,6 +42,8 @@ class Diffusor(TransformerMixin):
             Defaults to 1, which is suitable for normalized data.
 
     n_jobs : Number of threads to use in calculations. Defaults to all but one.
+    
+    verbose : controls verbosity.
 
 
     Returns
@@ -308,7 +310,7 @@ class Diffusor(TransformerMixin):
                                   dense=True,
                                   verbose=self.verbose
                                       ).fit(mms)
-        
+
         ind, dists, grad, graph = anbrs.ind_dist_grad(mms)
 
         end = time.time()

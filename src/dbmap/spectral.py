@@ -206,7 +206,7 @@ def multi_component_layout(
         # Normalized Laplacian
         I = scipy.sparse.identity(component_graph.shape[0], dtype=np.float64)
         D = scipy.sparse.spdiags(
-            1.0 / np.sqrt(diag_data)+1e-6,
+            1.0 / (np.sqrt(diag_data) + 1e-6),
             0,
             component_graph.shape[0],
             component_graph.shape[0],

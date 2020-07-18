@@ -147,13 +147,10 @@ class Diffusor(TransformerMixin):
         W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
         # Adaptive kernel decay rate
-        adaptive_decay = np.exp( adaptive_std ** ( 1 / adaptive_std)
+       #  adaptive_decay = np.exp( adaptive_std ** ( 1 / adaptive_std)
 
         # Kernel construction
         K = W + W.T
-        K = K ** adaptive_decay
-        K = np.exp()
-
 
         self.kernel = K
 

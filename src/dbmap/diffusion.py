@@ -42,7 +42,7 @@ class Diffusor(TransformerMixin):
             Defaults to 1, which is suitable for normalized data.
 
     n_jobs : Number of threads to use in calculations. Defaults to all but one.
-    
+
     verbose : controls verbosity.
 
 
@@ -119,11 +119,11 @@ class Diffusor(TransformerMixin):
             anbrs = anbrs.fit(data)
             knn = anbrs.transform(data)
             # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
-            adaptive_k = int(np.floor(self.n_neighbors / 2))
-            adaptive_std = np.zeros(self.N)
-            for i in np.arange(len(adaptive_std)):
-                adaptive_std[i] = np.sort(knn.data[knn.indptr[i]: knn.indptr[i + 1]])[
-                    adaptive_k - 1
+            median_k = int(np.floor(self.n_neighbors / 2))
+            adap_sd = np.zeros(data.shape[0])
+            for i in np.arange(len(adap_sd)):
+                adap_sd[i] = np.sort(knn.data[knn.indptr[i]: knn.indptr[i + 1]])[
+                    median_k - 1
                     ]
         else:
             # Construct a k-nearest-neighbors graph
@@ -136,22 +136,26 @@ class Diffusor(TransformerMixin):
             adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
             adaptive_std = np.ravel(adaptive_std.todense())
 
-        # Distance metrics
-        x, y, dists = find(knn)  # k-nearest-neighbor distances
+        x, y, dists = find(knn)
 
         if self.kernel_use == 'setty':
-           # X, y specific stds
            dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
 
         if self.kernel_use == 'sidarta':
-            # X, y specific stds
-            dists = dists - (dists / adaptive_std[x])  # Normalize by relative contribution to neighborhood size.
+            dists = dists - (dists / adap_sd[x])  # Normalize by relative contribution to neighborhood size.
 
         W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
+        # Adaptive kernel decay rate
+        adaptive_decay = np.exp( adaptive_std ** ( 1 / adaptive_std)
+
         # Kernel construction
-        kernel = W + W.T
-        self.kernel = kernel
+        K = W + W.T
+        K = K ** adaptive_decay
+        K = np.exp()
+
+
+        self.kernel = K
 
         return self
 
@@ -173,7 +177,7 @@ class Diffusor(TransformerMixin):
         T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
 
         # Eigen value decomposition
-        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
+        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=self.N)
         D = np.real(D)
         V = np.real(V)
         inds = np.argsort(D)[::-1]

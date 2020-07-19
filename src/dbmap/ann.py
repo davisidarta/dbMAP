@@ -41,24 +41,17 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         resolution, but users should beware that a too low value may render granulated and vaguely
         defined neighborhoods that arise as an artifact of downsampling. Defaults to 30. Larger
         values can slightly increase computational time.
-    metric: str (optional, default 'cosine_sparse')
-        accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
-        or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+    metric: str (optional, default 'cosine')
+        accepted NMSLIB metrics. Defaults to 'cosine'. Accepted metrics include:
         -'sqeuclidean'
         -'euclidean'
-        -'euclidean_sparse'
         -'l1'
-        -'l1_sparse'
         -'cosine'
-        -'cosine_sparse'
         -'angular'
-        -'angular_sparse'
         -'negdotprod'
-        -'negdotprod_sparse'
         -'levenshtein'
         -'hamming'
         -'jaccard'
-        -'jaccard_sparse'
         -'jansen-shan'
     method: str (optional, default 'hsnw')
         approximate-neighbor search method. Available methods include:
@@ -117,7 +110,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self,
                  n_neighbors=30,
-                 metric='cosine_sparse',
+                 metric='cosine',
                  method='hnsw',
                  n_jobs=10,
                  efC=100,
@@ -134,26 +127,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.M = M
         self.efC = efC
         self.efS = efS
-        self.space = {
-            'sqeuclidean': 'l2',
-            'euclidean': 'l2',
-            'euclidean_sparse': 'l2_sparse',
-            'cosine': 'cosinesimil',
-            'cosine_sparse': 'cosinesimil_sparse_fast',
-            'l1': 'l1',
-            'l1_sparse': 'l1_sparse',
-            'linf': 'linf',
-            'linf_sparse': 'linf_sparse',
-            'angular': 'angulardist',
-            'angular_sparse': 'angulardist_sparse_fast',
-            'negdotprod': 'negdotprod',
-            'negdotprod_sparse': 'negdotprod_sparse_fast',
-            'levenshtein': 'leven',
-            'hamming': 'bit_hamming',
-            'jaccard': 'bit_jaccard',
-            'jaccard_sparse': 'jaccard_sparse',
-            'jansen-shan': 'jsmetrfastapprox'
-        }[self.metric]
+        self.space = self.metric
+
         self.dense = dense
         self.verbose = verbose
 
@@ -161,7 +136,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         # see more metrics in the manual
         # https://github.com/nmslib/nmslib/tree/master/manual
 
-        self.n_samples_fit_ = data.shape[0]
 
         if self.dense:
             self.nmslib_ = nmslib.init(method=self.method,
@@ -181,16 +155,45 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)
 
-        self.n_samples_fit_ = data.shape[0]
+        self.n_samples_transform_ = data.shape[0]
 
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
-        if (issparse(data) == True) and (not self.dense) and (not isinstance(data, np.ndarray)):
-            self.nmslib_ = nmslib.init(method=self.method,
+        if issparse(data) and (not self.dense) and (not isinstance(data, np.ndarray)):
+            if self.metric not in ['levenshtein', 'hamming', 'jansen-shan']:
+                self.space = {
+                    'sqeuclidean': 'l2_sparse',
+                    'euclidean': 'l2_sparse',
+                    'cosine': 'cosinesimil_sparse_fast',
+                    'l1_sparse': 'l1_sparse',
+                    'linf_sparse': 'linf_sparse',
+                    'angular_sparse': 'angulardist_sparse_fast',
+                    'negdotprod_sparse': 'negdotprod_sparse_fast',
+                    'jaccard': 'jaccard_sparse',
+                }[self.metric]
+                self.nmslib_ = nmslib.init(method=self.method,
+                                           space=self.space,
+                                           data_type=nmslib.DataType.SPARSE_VECTOR)
+            else:
+                print('Metric ' + self.metric + 'available for dense spaces only. Converting to dense.')
+                data = data.toarray()
+                self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
-                                       data_type=nmslib.DataType.SPARSE_VECTOR)
-
+                                       data_type=nmslib.DataType.DENSE_VECTOR)
         else:
+            self.space = {
+                'sqeuclidean': 'l2',
+                'euclidean': 'l2',
+                'cosine': 'cosinesimil',
+                'l1': 'l1',
+                'linf': 'linf',
+                'angular': 'angulardist',
+                'negdotprod': 'negdotprod',
+                'levenshtein': 'leven',
+                'hamming': 'bit_hamming',
+                'jaccard': 'bit_jaccard',
+                'jansen-shan': 'jsmetrfastapprox'
+            }[self.metric]
             self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
                                        data_type=nmslib.DataType.DENSE_VECTOR)
@@ -208,6 +211,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, data):
+        self.n_samples_transform_ = data.shape[0]
         start = time.time()
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}
@@ -271,8 +275,10 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         # Define gradients
         grad = []
-
-        if self.metric == 'cosine' or self.metric == 'cosine_sparse':
+        if self.metric not in ['sqeuclidean', 'euclidean', 'cosine', 'linf']:
+            print('Gradient undefined for metric \'' + self.metric + '\'. Returning empty array.')
+        
+        if self.metric == 'cosine':
             norm_x = 0.0
             norm_y = 0.0
             for i in range(x.shape[0]):
@@ -285,13 +291,13 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             else:
                 grad = -(x * dists - y * norm_x) / np.sqrt(norm_x ** 3 * norm_y)
 
-        if self.metric == 'euclidean' or self.metric == 'euclidean_sparse':
+        if self.metric == 'euclidean':
             grad = x - y / (1e-6 + np.sqrt(dists))
 
         if self.metric == 'sqeuclidean':
             grad = x - y / (1e-6 + dists)
 
-        if self.metric == 'linf' or self.metric == 'linf_sparse':
+        if self.metric == 'linf':
             result = 0.0
             max_i = 0
             for i in range(x.shape[0]):

@@ -243,7 +243,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         return kneighbors_graph
 
-    def ind_dist_grad(self, data):
+    def ind_dist_grad(self, data, return_grad=True, return_graph=True):
 
         start = time.time()
         n_samples_transform = data.shape[0]
@@ -269,50 +269,60 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         kneighbors_graph = csr_matrix((distances.ravel(), indices.ravel(),
                                        indptr), shape=(n_samples_transform,
                                                        n_samples_transform))
-        x, y, dists = find(kneighbors_graph)
-
-        # Define gradients
-        grad = []
-        if self.metric not in ['sqeuclidean', 'euclidean', 'cosine', 'linf']:
-            print('Gradient undefined for metric \'' + self.metric + '\'. Returning empty array.')
-
-        if self.metric == 'cosine':
-            norm_x = 0.0
-            norm_y = 0.0
-            for i in range(x.shape[0]):
-                norm_x += x[i] ** 2
-                norm_y += y[i] ** 2
-            if norm_x == 0.0 and norm_y == 0.0:
+        if return_grad:
+            x, y, dists = find(kneighbors_graph)
+    
+            # Define gradients
+            grad = []
+            if self.metric not in ['sqeuclidean', 'euclidean', 'cosine', 'linf']:
+                print('Gradient undefined for metric \'' + self.metric + '\'. Returning empty array.')
+    
+            if self.metric == 'cosine':
+                norm_x = 0.0
+                norm_y = 0.0
+                for i in range(x.shape[0]):
+                    norm_x += x[i] ** 2
+                    norm_y += y[i] ** 2
+                if norm_x == 0.0 and norm_y == 0.0:
+                    grad = np.zeros(x.shape)
+                elif norm_x == 0.0 or norm_y == 0.0:
+                    grad = np.zeros(x.shape)
+                else:
+                    grad = -(x * dists - y * norm_x) / np.sqrt(norm_x ** 3 * norm_y)
+    
+            if self.metric == 'euclidean':
+                grad = x - y / (1e-6 + np.sqrt(dists))
+    
+            if self.metric == 'sqeuclidean':
+                grad = x - y / (1e-6 + dists)
+    
+            if self.metric == 'linf':
+                result = 0.0
+                max_i = 0
+                for i in range(x.shape[0]):
+                    v = np.abs(x[i] - y[i])
+                    if v > result:
+                        result = dists
+                        max_i = i
                 grad = np.zeros(x.shape)
-            elif norm_x == 0.0 or norm_y == 0.0:
-                grad = np.zeros(x.shape)
-            else:
-                grad = -(x * dists - y * norm_x) / np.sqrt(norm_x ** 3 * norm_y)
-
-        if self.metric == 'euclidean':
-            grad = x - y / (1e-6 + np.sqrt(dists))
-
-        if self.metric == 'sqeuclidean':
-            grad = x - y / (1e-6 + dists)
-
-        if self.metric == 'linf':
-            result = 0.0
-            max_i = 0
-            for i in range(x.shape[0]):
-                v = np.abs(x[i] - y[i])
-                if v > result:
-                    result = dists
-                    max_i = i
-            grad = np.zeros(x.shape)
-            grad[max_i] = np.sign(x[max_i] - y[max_i])
+                grad[max_i] = np.sign(x[max_i] - y[max_i])
 
         end = time.time()
 
         if self.verbose:
             print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
                   (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
+        
+        if return_graph and return_grad:
+            return indices, distances, grad, kneighbors_graph
+        if return_graph and not return_grad:
+            return indices, distances, kneighbors_graph
+        if not return_graph and return_grad:
+            return indices, distances, grad
+        if not return_graph and not return_grad:
+            return indices, distances
 
-        return indices, distances, grad, kneighbors_graph
+
 
     def test_efficiency(self, data, data_use=0.1):
         """Test that NMSlibTransformer and KNeighborsTransformer give same results

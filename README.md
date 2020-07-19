@@ -118,7 +118,12 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
    
   ```
  ![dbMAP handwritten digits visualization](https://github.com/davisidarta/dbMAP/blob/master/Digits.png)
-     
+
+# Benchmarking
+
+As we prepare for a second version of the manuscript, extensive benchmarking of dbMAP and other dimensionality reduction methods is underway. For the time being, consider the runtime comparison between PCA, dbMAP (and its diffusion process alone) and the fastest non-linear algorithms to date: PHATE and UMAP.
+
+![dbMAP_runtime_benchmark](https://github.com/davisidarta/dbMAP/blob/master/benchmark.png)
 
 # Citation
 

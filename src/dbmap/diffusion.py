@@ -75,7 +75,7 @@ class Diffusor(TransformerMixin):
                  alpha=0.5,
                  n_jobs=10,
                  ann=True,
-                 ann_dist='cosine_sparse',
+                 ann_dist='cosine',
                  M=30,
                  efC=100,
                  efS=100,
@@ -144,7 +144,7 @@ class Diffusor(TransformerMixin):
         if self.kernel_use == 'sidarta':
             dists = dists - (dists / adap_sd[x])  # Normalize by relative contribution to neighborhood size.
 
-        W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+        W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized informative distances
 
         # Adaptive kernel decay rate
        #  adaptive_decay = np.exp( adaptive_std ** ( 1 / adaptive_std)

@@ -155,8 +155,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)
 
-        self.n_samples_transform_ = data.shape[0]
-
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
         if issparse(data) and (not self.dense) and (not isinstance(data, np.ndarray)):
@@ -211,7 +209,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, data):
-        self.n_samples_transform_ = data.shape[0]
         start = time.time()
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}
@@ -238,7 +235,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                            self.n_neighbors)
         kneighbors_graph = csr_matrix((distances.ravel(), indices.ravel(),
                                        indptr), shape=(n_samples_transform,
-                                                       self.n_samples_transform_))
+                                                       n_samples_transform))
         end = time.time()
         if self.verbose:
             print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
@@ -247,7 +244,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         return kneighbors_graph
 
     def ind_dist_grad(self, data):
-        self.n_samples_transform_ = data.shape[0]
+
         start = time.time()
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}
@@ -271,7 +268,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                            self.n_neighbors)
         kneighbors_graph = csr_matrix((distances.ravel(), indices.ravel(),
                                        indptr), shape=(n_samples_transform,
-                                                       self.n_samples_transform_))
+                                                       n_samples_transform))
         x, y, dists = find(kneighbors_graph)
 
         # Define gradients

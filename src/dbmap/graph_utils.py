@@ -24,8 +24,8 @@ def fuzzy_simplicial_set_nmslib(
         nmslib_M=30,
         set_op_mix_ratio=1.0,
         local_connectivity=1.0,
-        apply_set_operations=True):
-
+        apply_set_operations=True,
+        verbose=False):
     """Given a set of data X, a neighborhood size, and a measure of distance
     compute the fuzzy simplicial set (here represented as a fuzzy graph in
     the form of a sparse matrix) associated to the data. This is done by
@@ -41,24 +41,18 @@ def fuzzy_simplicial_set_nmslib(
         Larger numbers induce more global estimates of the manifold that can
         miss finer detail, while smaller values will focus on fine manifold
         structure to the detriment of the larger picture.
-    nmslib_metric: str (optional, default 'cosine_sparse')
-        accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
-                or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+    nmslib_metric: str (optional, default 'cosine')
+        accepted NMSLIB metrics. Accepted metrics include:
                 -'sqeuclidean'
                 -'euclidean'
-                -'euclidean_sparse'
                 -'l1'
                 -'l1_sparse'
                 -'cosine'
-                -'cosine_sparse'
                 -'angular'
-                -'angular_sparse'
                 -'negdotprod'
-                -'negdotprod_sparse'
                 -'levenshtein'
                 -'hamming'
                 -'jaccard'
-                -'jaccard_sparse'
                 -'jansen-shan'
     nmslib_n_jobs: int (optional, default None)
         Number of threads to use for approximate-nearest neighbor search.
@@ -114,30 +108,25 @@ def fuzzy_simplicial_set_nmslib(
     if knn_indices is None or knn_dists is None:
         print('Running fast approximate nearest neighbors with NMSLIB using HNSW...')
         if nmslib_metric is not {'sqeuclidean',
-                             'euclidean',
-                             'euclidean_sparse',
-                             'l1',
-                             'l1_sparse',
-                             'cosine',
-                             'cosine_sparse',
-                             'angular',
-                             'angular_sparse',
-                             'negdotprod',
-                             'negdotprod_sparse',
-                             'levenshtein',
-                             'hamming',
-                             'jaccard',
-                             'jaccard_sparse',
-                             'jansen-shan'}:
+                                 'euclidean',
+                                 'l1',
+                                 'cosine',
+                                 'angular',
+                                 'negdotprod',
+                                 'levenshtein',
+                                 'hamming',
+                                 'jaccard',
+                                 'jansen-shan'}:
             print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
         knn_indices, knn_dists = approximate_n_neighbors(X,
-                                                     n_neighbors=n_neighbors,
-                                                     metric=nmslib_metric,
-                                                     method='hnsw',
-                                                     n_jobs=nmslib_n_jobs,
-                                                     efC=nmslib_efC,
-                                                     efS=nmslib_efS,
-                                                     M=nmslib_M)
+                                                         n_neighbors=n_neighbors,
+                                                         metric=nmslib_metric,
+                                                         method='hnsw',
+                                                         n_jobs=nmslib_n_jobs,
+                                                         efC=nmslib_efC,
+                                                         efS=nmslib_efS,
+                                                         M=nmslib_M,
+                                                         verbose=verbose)
 
     knn_dists = knn_dists.astype(np.float32)
 
@@ -160,30 +149,31 @@ def fuzzy_simplicial_set_nmslib(
         prod_matrix = result.multiply(transpose)
 
         result = (
-            set_op_mix_ratio * (result + transpose - prod_matrix)
-            + (1.0 - set_op_mix_ratio) * prod_matrix
+                set_op_mix_ratio * (result + transpose - prod_matrix)
+                + (1.0 - set_op_mix_ratio) * prod_matrix
         )
 
     result.eliminate_zeros()
 
     return result, sigmas, rhos
 
+
 def compute_connectivities_adapmap(
-    data,
-    n_components=100,
-    n_neighbors=30,
-    alpha=0.5,
-    n_jobs=10,
-    ann=True,
-    ann_dist='cosine',
-    M=30,
-    efC=100,
-    efS=100,
-    knn_dist='euclidean',
-    kernel_use='sidarta',
-    sensitivity=1,
-    set_op_mix_ratio=1.0,
-    local_connectivity=1.0,
+        data,
+        n_components=100,
+        n_neighbors=30,
+        alpha=0.0,
+        n_jobs=10,
+        ann=True,
+        ann_dist='cosine',
+        M=30,
+        efC=100,
+        efS=100,
+        knn_dist='euclidean',
+        kernel_use='sidarta',
+        sensitivity=1,
+        set_op_mix_ratio=1.0,
+        local_connectivity=1.0,
 
 ):
     """
@@ -205,9 +195,7 @@ def compute_connectivities_adapmap(
     n_neighbors : Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
                   distance of its median neighbor.
 
-    knn_dist : Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
-               different metrics, such as 'cosine' and 'jaccard'. The 'hamming' and 'jaccard' distances are also available
-               for string vectors.
+    knn_dist : Distance metric for building kNN graph. Defaults to 'euclidean'. 
 
     ann : Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
 
@@ -254,19 +242,19 @@ def compute_connectivities_adapmap(
         data = data
 
     diff = diffusion.Diffusor(
-                 n_components=n_components,
-                 n_neighbors=n_neighbors,
-                 alpha=alpha,
-                 n_jobs=n_jobs,
-                 ann=ann,
-                 ann_dist=ann_dist,
-                 M=M,
-                 efC=efC,
-                 efS=efS,
-                 knn_dist=knn_dist,
-                 kernel_use=kernel_use,
-                 sensitivity=sensitivity).fit(data)
-    knn_indices, knn_distances, knn_grad, knn_graph = diff.ind_dist_grad(data, dense=True)
+        n_components=n_components,
+        n_neighbors=n_neighbors,
+        alpha=alpha,
+        n_jobs=n_jobs,
+        ann=ann,
+        ann_dist=ann_dist,
+        M=M,
+        efC=efC,
+        efS=efS,
+        knn_dist=knn_dist,
+        kernel_use=kernel_use,
+        sensitivity=sensitivity).fit(data)
+    knn_indices, knn_distances, knn_grad, knn_graph = diff.ind_dist_grad(data, dense=False)
 
     if not issparse(knn_graph):
         knn_graph = csr_matrix(knn_graph)
@@ -288,7 +276,6 @@ def compute_connectivities_adapmap(
             connectivities = csr_matrix(connectivities)
         else:
             connectivities = connectivities.tocsr()
-
 
     return knn_graph, connectivities
 
@@ -312,20 +299,22 @@ def get_sparse_matrix_from_indices_distances_dbmap(knn_indices, knn_dists, n_obs
             vals[i * n_neighbors + j] = val
 
     result = coo_matrix((vals, (rows, cols)),
-                                      shape=(n_obs, n_obs))
+                        shape=(n_obs, n_obs))
     result.eliminate_zeros()
     return result.tocsr()
 
+
 def approximate_n_neighbors(data,
-        n_neighbors=30,
-        metric='cosine',
-        method='hnsw',
-        n_jobs=10,
-        efC=100,
-        efS=100,
-        M=30,
-        dense=False
-):
+                            n_neighbors=30,
+                            metric='cosine',
+                            method='hnsw',
+                            n_jobs=10,
+                            efC=100,
+                            efS=100,
+                            M=30,
+                            dense=False,
+                            verbose=False
+                            ):
     """
     Simple function using NMSlibTransformer from dbmap.ann. This implements a very fast
     and scalable approximate k-nearest-neighbors graph on spaces defined by nmslib.
@@ -344,23 +333,16 @@ def approximate_n_neighbors(data,
                      defined neighborhoods that arise as an artifact of downsampling. Defaults to 30. Larger
                      values can slightly increase computational time.
 
-    metric: accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
-                or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+    metric: accepted NMSLIB metrics. Defaults to 'cosine'. Accepted metrics include:
                 -'sqeuclidean'
                 -'euclidean'
-                -'euclidean_sparse'
                 -'l1'
-                -'l1_sparse'
                 -'cosine'
-                -'cosine_sparse'
                 -'angular'
-                -'angular_sparse'
                 -'negdotprod'
-                -'negdotprod_sparse'
                 -'levenshtein'
                 -'hamming'
                 -'jaccard'
-                -'jaccard_sparse'
                 -'jansen-shan'
 
     method: approximate-neighbor search method. Defaults to 'hsnw' (usually the fastest).
@@ -404,11 +386,14 @@ def approximate_n_neighbors(data,
                                      n_jobs=n_jobs,
                                      efC=efC,
                                      efS=efS,
-                                     M=M, dense=dense).fit(data)
-    
+                                     M=M, 
+                                     dense=dense,
+                                     verbose=verbose).fit(data)
+
     knn_inds, knn_distances, grad, knn_graph = anbrs.ind_dist_grad(data)
 
     return knn_inds, knn_distances
+
 
 def compute_membership_strengths(knn_indices, knn_dists, sigmas, rhos):
     """Construct the membership strength data for the 1-skeleton of each local
@@ -457,6 +442,7 @@ def compute_membership_strengths(knn_indices, knn_dists, sigmas, rhos):
             vals[i * n_neighbors + j] = val
 
     return rows, cols, vals
+
 
 def smooth_knn_dist(distances, k, n_iter=64, local_connectivity=1.0, bandwidth=1.0):
     """Compute a continuous version of the distance to the kth nearest
@@ -511,7 +497,7 @@ def smooth_knn_dist(distances, k, n_iter=64, local_connectivity=1.0, bandwidth=1
                 rho[i] = non_zero_dists[index - 1]
                 if interpolation > SMOOTH_K_TOLERANCE:
                     rho[i] += interpolation * (
-                        non_zero_dists[index] - non_zero_dists[index - 1]
+                            non_zero_dists[index] - non_zero_dists[index - 1]
                     )
             else:
                 rho[i] = interpolation * non_zero_dists[0]
@@ -553,6 +539,7 @@ def smooth_knn_dist(distances, k, n_iter=64, local_connectivity=1.0, bandwidth=1
                 result[i] = MIN_K_DIST_SCALE * mean_distances
 
     return result, rho
+
 
 def get_igraph_from_adjacency(adjacency, directed=None):
     """Get igraph graph from adjacency matrix."""

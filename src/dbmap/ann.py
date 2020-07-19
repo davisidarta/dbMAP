@@ -71,7 +71,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         'hnsw' is usually the fastest method, followed by 'sw-graph' and 'vp-tree'.
     n_jobs: int (optional, default 1)
         number of threads to be used in computation. Defaults to 1. The algorithm is highly
-        scalable to multithreading.
+        scalable to multi-threading.
     efC: int (optional, default 100)
         A 'hnsw' parameter. Increasing this value improves the quality of a constructed graph
         and leads to higher accuracy of search. However this also leads to longer indexing times.
@@ -163,8 +163,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         self.n_samples_fit_ = data.shape[0]
 
-        index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
-
         if self.dense:
             self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
@@ -201,6 +199,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         start = time.time()
         self.nmslib_.createIndex(index_time_params)
         end = time.time()
+
         if self.verbose:
             print('Index-time parameters', 'M:', self.M, 'n_threads:', self.n_jobs, 'efConstruction:', self.efC,
                   'post:0')
@@ -353,3 +352,13 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             recall = recall + float(len(correct_set.intersection(ret_set))) / len(correct_set)
         recall = recall / query_qty
         print('kNN recall %f' % recall)
+
+    def update_search(self, n_neighbors):
+        """
+        Updates number of neighbors for kNN distance computation.
+        Parameters
+        -----------
+        n_neighbors: New number of neighbors to look for.
+
+        """
+        self.n_neighbors = n_neighbors

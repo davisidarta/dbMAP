@@ -212,14 +212,15 @@ def smooth_knn_dist(distances, k, n_iter=64, local_connectivity=1.0, bandwidth=1
 
 
 def approximate_n_neighbors(data,
-        n_neighbors=30,
-        metric='cosine_sparse',
-        method='hnsw',
-        n_jobs=10,
-        efC=100,
-        efS=100,
-        M=30
-):
+                            n_neighbors=30,
+                            metric='cosine',
+                            method='hnsw',
+                            n_jobs=10,
+                            efC=100,
+                            efS=100,
+                            M=30,
+                            verbose=False
+                            ):
     """
     Simple function using NMSlibTransformer from dbmap.ann. This implements a very fast
     and scalable approximate k-nearest-neighbors graph on spaces defined by nmslib.
@@ -238,23 +239,16 @@ def approximate_n_neighbors(data,
                      defined neighborhoods that arise as an artifact of downsampling. Defaults to 30. Larger
                      values can slightly increase computational time.
 
-    metric: accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
-                or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+    metric: accepted NMSLIB metrics. Defaults to 'cosine'. Accepted metrics include:
                 -'sqeuclidean'
                 -'euclidean'
-                -'euclidean_sparse'
                 -'l1'
-                -'l1_sparse'
                 -'cosine'
-                -'cosine_sparse'
                 -'angular'
-                -'angular_sparse'
                 -'negdotprod'
-                -'negdotprod_sparse'
                 -'levenshtein'
                 -'hamming'
                 -'jaccard'
-                -'jaccard_sparse'
                 -'jansen-shan'
 
     method: approximate-neighbor search method. Defaults to 'hsnw' (usually the fastest).
@@ -299,7 +293,8 @@ def approximate_n_neighbors(data,
                                      n_jobs=n_jobs,
                                      efC=efC,
                                      efS=efS,
-                                     M=M).fit(data)
+                                     M=M,
+                                     verbose=verbose).fit(data)
     knn_indices, knn_dists, grad, kneighbors_graph = anbrs.ind_dist_grad(data)
     return knn_indices, knn_dists
 
@@ -689,7 +684,7 @@ def fuzzy_simplicial_set_nmslib(
     metric,
     metric_kwds={},
     use_nmslib=True,
-    nmslib_metric='cosine_sparse',
+    nmslib_metric='cosine',
     nmslib_n_jobs=10,
     nmslib_efC=100,
     nmslib_efS=100,
@@ -762,24 +757,18 @@ def fuzzy_simplicial_set_nmslib(
         neighbors. This is a wrapper around NMSLIB that supports fast and parallelized
         computation with an array of handy features. If set to True, distances
         are measured in the space defined on the ann_metric parameter.
-    nmslib_metric: str (optional, default 'cosine_sparse')
-        accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
-                or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+    nmslib_metric: str (optional, default 'cosine')
+        accepted NMSLIB metrics. Defaults to 'cosine'. Accepted metrics include:
                 -'sqeuclidean'
                 -'euclidean'
-                -'euclidean_sparse'
                 -'l1'
                 -'l1_sparse'
                 -'cosine'
-                -'cosine_sparse'
                 -'angular'
-                -'angular_sparse'
                 -'negdotprod'
-                -'negdotprod_sparse'
                 -'levenshtein'
                 -'hamming'
                 -'jaccard'
-                -'jaccard_sparse'
                 -'jansen-shan'
     nmslib_n_jobs: int (optional, default None)
         Number of threads to use for approximate-nearest neighbor search.
@@ -839,31 +828,26 @@ def fuzzy_simplicial_set_nmslib(
     if knn_indices is None or knn_dists is None:
         if use_nmslib:
             print('Running fast approximate nearest neighbors with NMSLIB using HNSW...')
-            if nmslib_metric is not {'sqeuclidean',
+            if nmslib_metric not in ['sqeuclidean',
                     'euclidean',
-                    'euclidean_sparse',
                     'l1',
-                    'l1_sparse',
                     'cosine',
-                    'cosine_sparse',
                     'angular',
-                    'angular_sparse',
                     'negdotprod',
-                    'negdotprod_sparse',
                     'levenshtein',
                     'hamming',
                     'jaccard',
-                    'jaccard_sparse',
-                    'jansen-shan'}:
+                    'jansen-shan']:
                 print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
             knn_indices, knn_dists = approximate_n_neighbors(X,
-                n_neighbors=n_neighbors,
-                metric=nmslib_metric,
-                method='hnsw',
-                n_jobs=nmslib_n_jobs,
-                efC=nmslib_efC,
-                efS=nmslib_efS,
-                M=nmslib_M)
+                                                             n_neighbors=n_neighbors,
+                                                             metric=nmslib_metric,
+                                                             method='hnsw',
+                                                             n_jobs=nmslib_n_jobs,
+                                                             efC=nmslib_efC,
+                                                             efS=nmslib_efS,
+                                                             M=nmslib_M,
+                                                             verbose=verbose)
         else:
             knn_indices, knn_dists, _ = nearest_neighbors(
                 X, n_neighbors, metric, metric_kwds, angular, random_state, verbose=verbose
@@ -1387,10 +1371,11 @@ def find_ab_params(spread, min_dist):
     return params[0], params[1]
 
 
-class UMAP(BaseEstimator):
-    """Uniform Manifold Approximation and Projection
+class AMAP(BaseEstimator):
+    """Adaptive Manifold Approximation and Projection
     Finds a low dimensional embedding of the data that approximates
-    an underlying manifold.
+    the underlying manifold through fuzzy-union layout. Accelerated
+    when use_nmslib = `True`.
     Parameters
     ----------
     n_neighbors: float (optional, default 15)
@@ -1399,67 +1384,28 @@ class UMAP(BaseEstimator):
         result in more global views of the manifold, while smaller
         values result in more local data being preserved. In general
         values should be in the range 2 to 100.
+
     n_components: int (optional, default 2)
         The dimension of the space to embed into. This defaults to 2 to
         provide easy visualization, but can reasonably be set to any
         integer value in the range 2 to 100.
-    metric: string or function (optional, default 'euclidean')
-        The metric to use to compute distances in high dimensional space.
-        If a string is passed it must match a valid predefined metric. If
-        a general metric is required a function that takes two 1d arrays and
-        returns a float can be provided. For performance purposes it is
-        required that this be a numba jit'd function. Valid string metrics
-        include:
-            * euclidean
-            * manhattan
-            * chebyshev
-            * minkowski
-            * canberra
-            * braycurtis
-            * mahalanobis
-            * wminkowski
-            * seuclidean
-            * cosine
-            * correlation
-            * haversine
-            * hamming
-            * jaccard
-            * dice
-            * russelrao
-            * kulsinski
-            * ll_dirichlet
-            * hellinger
-            * rogerstanimoto
-            * sokalmichener
-            * sokalsneath
-            * yule
-        Metrics that take arguments (such as minkowski, mahalanobis etc.)
-        can have arguments passed via the metric_kwds dictionary. At this
-        time care must be taken and dictionary elements must be ordered
-        appropriately; this will hopefully be fixed in the future.
+
     use_nmslib: bool (optional, default True)
         Whether to use NMSLibTransformer to compute fast approximate nearest
         neighbors. This is a wrapper aroud NMSLIB that supports fast and parallelized
         computation with an array of handy features. If set to True, distances
         are measured in the space defined on the ann_metric parameter.
-    nmslib_metric: str (optional, default 'cosine_sparse')
-        accepted NMSLIB metrics. Should be 'metric' or 'metric_sparse' depending on dense
-                or sparse inputs. Defaults to 'cosine_sparse'. Accepted metrics include:
+    nmslib_metric: str (optional, default 'cosine')
+        accepted NMSLIB metrics. Defaults to 'cosine'. Accepted metrics include:
                 -'sqeuclidean'
                 -'euclidean'
-                -'euclidean_sparse'
                 -'l1'
-                -'l1_sparse'
                 -'cosine'
-                -'cosine_sparse'
                 -'angular'
-                -'angular_sparse'
                 -'negdotprod'
-                -'negdotprod_sparse'
                 -'levenshtein'
                 -'hamming'
                 -'jaccard'
-                -'jaccard_sparse'
                 -'jansen-shan'
     nmslib_n_jobs: int (optional, default None)
         Number of threads to use for approximate-nearest neighbor search.
@@ -1497,11 +1443,25 @@ class UMAP(BaseEstimator):
     spread: float (optional, default 1.0)
         The effective scale of embedded points. In combination with ``min_dist``
         this determines how clustered/clumped the embedded points are.
+    metric: string or function (optional, default 'euclidean')
+        Used if use_nmslib = `False`. The metric to use to compute distances
+        in high dimensional space. If a string is passed it must match a valid
+        predefined metric. If a general metric is required a function that takes
+        two 1d arrays and returns a float can be provided. For performance purposes
+        it is required that this be a numba jit'd function. Valid string metrics
+        that should be used within AMAP include:
+            * euclidean
+            * manhattan
+            * seuclidean
+            * cosine
+            * correlation
+            * haversine
+            * hamming
+            * jaccard
     low_memory: bool (optional, default False)
-        For some datasets the nearest neighbor computation can consume a lot of
-        memory. If you find that UMAP is failing due to memory constraints
-        consider setting this option to True. This approach is more
-        computationally expensive, but avoids excessive memory use.
+        If you find that AMAP is failing due to memory constraints
+        consider setting use_nmslib to `False` and this option to `True`. This approach
+        is more computationally expensive, but avoids excessive memory use.
     set_op_mix_ratio: float (optional, default 1.0)
         Interpolate between (fuzzy) union and intersection as the set operation
         used to combine local fuzzy simplicial sets to obtain a global fuzzy
@@ -1590,7 +1550,7 @@ class UMAP(BaseEstimator):
         output_metric="euclidean",
         output_metric_kwds=None,
         use_nmslib=True,
-        nmslib_metric='cosine_sparse',
+        nmslib_metric='cosine',
         nmslib_n_jobs=10,
         nmslib_efC=100,
         nmslib_efS=100,
@@ -2028,28 +1988,23 @@ class UMAP(BaseEstimator):
             if self.use_nmslib == True:
                 if self.nmslib_metric not in ('sqeuclidean',
                                          'euclidean',
-                                         'euclidean_sparse',
                                          'l1',
-                                         'l1_sparse',
                                          'cosine',
-                                         'cosine_sparse',
                                          'angular',
-                                         'angular_sparse',
                                          'negdotprod',
-                                         'negdotprod_sparse',
                                          'levenshtein',
                                          'hamming',
                                          'jaccard',
-                                         'jaccard_sparse',
                                          'jansen-shan'):
                     print('Please input a metric compatible with NMSLIB when use_nmslib is set to True')
                 self._knn_indices, self._knn_dists, = approximate_n_neighbors(X, n_neighbors=self._n_neighbors,
-                                                                                   metric=self.nmslib_metric,
-                                                                                   method='hnsw',
-                                                                                   n_jobs=self.nmslib_n_jobs,
-                                                                                   efC=self.nmslib_efC,
-                                                                                   efS=self.nmslib_efS,
-                                                                                   M=self.nmslib_M)
+                                                                              metric=self.nmslib_metric,
+                                                                              method='hnsw',
+                                                                              n_jobs=self.nmslib_n_jobs,
+                                                                              efC=self.nmslib_efC,
+                                                                              efS=self.nmslib_efS,
+                                                                              M=self.nmslib_M,
+                                                                              verbose=self.verbose)
 
 
                 self.graph_, self._sigmas, self._rhos = fuzzy_simplicial_set_nmslib(

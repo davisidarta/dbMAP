@@ -238,7 +238,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                            self.n_neighbors)
         kneighbors_graph = csr_matrix((distances.ravel(), indices.ravel(),
                                        indptr), shape=(n_samples_transform,
-                                                       self.n_samples_fit_))
+                                                       self.n_samples_transform_))
         end = time.time()
         if self.verbose:
             print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
@@ -247,6 +247,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         return kneighbors_graph
 
     def ind_dist_grad(self, data):
+        self.n_samples_transform_ = data.shape[0]
         start = time.time()
         n_samples_transform = data.shape[0]
         query_time_params = {'efSearch': self.efS}
@@ -270,14 +271,14 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                            self.n_neighbors)
         kneighbors_graph = csr_matrix((distances.ravel(), indices.ravel(),
                                        indptr), shape=(n_samples_transform,
-                                                       self.n_samples_fit_))
+                                                       self.n_samples_transform_))
         x, y, dists = find(kneighbors_graph)
 
         # Define gradients
         grad = []
         if self.metric not in ['sqeuclidean', 'euclidean', 'cosine', 'linf']:
             print('Gradient undefined for metric \'' + self.metric + '\'. Returning empty array.')
-        
+
         if self.metric == 'cosine':
             norm_x = 0.0
             norm_y = 0.0

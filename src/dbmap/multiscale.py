@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
 
 def multiscale(res, n_eigs=None):
     """Determine multi scale space of the data

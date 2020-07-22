@@ -7,13 +7,14 @@
 import time
 import numpy as np
 import pandas as pd
+from scipy import stats
 from scipy.sparse import csr_matrix, find, issparse
 from scipy.sparse.linalg import eigs
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import normalize
 from . import ann
 from . import multiscale
-from . import utils
 
 
 print(__doc__)
@@ -70,9 +71,9 @@ class Diffusor(TransformerMixin):
     """
 
     def __init__(self,
-                 n_components=100,
-                 n_neighbors=30,
-                 alpha=0.5,
+                 n_components=50,
+                 n_neighbors=10,
+                 alpha=1,
                  n_jobs=10,
                  ann=True,
                  ann_dist='cosine',
@@ -80,8 +81,7 @@ class Diffusor(TransformerMixin):
                  efC=100,
                  efS=100,
                  knn_dist='cosine',
-                 kernel_use='sidarta',
-                 verbose=False
+                 verbose=True
                  ):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
@@ -93,14 +93,12 @@ class Diffusor(TransformerMixin):
         self.efC = efC
         self.efS = efS
         self.knn_dist = knn_dist
-        self.kernel_use = kernel_use
         self.verbose = verbose
 
     def fit(self, data):
-        """Effectively computes on data.
-        :param plot_knee: Whether to plot the scree plot of diffusion eigenvalues.
+        """Fits an adaptive anisotropic kernel to the data.
         :param data: input data. Takes in numpy arrays and scipy csr sparse matrices.
-        Please use with sparse data for top performance. You can adjust a series of
+        Use with sparse data for top performance. You can adjust a series of
         parameters that can make the process faster and more informational depending
         on your dataset. Read more at https://github.com/davisidarta/dbmap
         """
@@ -115,12 +113,12 @@ class Diffusor(TransformerMixin):
                                           M=self.M,
                                           efC=self.efC,
                                           efS=self.efS,
-                                          verbose=self.verbose)
-            anbrs = anbrs.fit(data)
-            knn = anbrs.transform(data)
+                                          verbose=self.verbose).fit(data)
+            ind, dist, grad, knn = anbrs.ind_dist_grad(data)
+
             # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
-            median_k = int(np.floor(self.n_neighbors / 2))
-            adap_sd = np.zeros(data.shape[0])
+            median_k = np.floor(self.n_neighbors / 2).astype(np.int)
+            adap_sd = np.zeros(self.N)
             for i in np.arange(len(adap_sd)):
                 adap_sd[i] = np.sort(knn.data[knn.indptr[i]: knn.indptr[i + 1]])[
                     median_k - 1
@@ -130,51 +128,51 @@ class Diffusor(TransformerMixin):
             nbrs = NearestNeighbors(n_neighbors=int(self.n_neighbors), metric=self.knn_dist, n_jobs=self.n_jobs).fit(
                 data)
             knn = nbrs.kneighbors_graph(data, mode='distance')
-            # Normalize distances by the distance of median nearest neighbor to account for neighborhood size.
-            adaptive_k = int(np.floor(self.n_neighbors / 2))
-            nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=self.n_jobs).fit(data)
-            adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
-            adaptive_std = np.ravel(adaptive_std.todense())
+            x, y, dist = find(knn)
+            # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
+            median_k = np.floor(self.n_neighbors / 2).astype(np.int)
+            adap_sd = np.zeros(self.N)
+            for i in np.arange(len(adap_sd)):
+                adap_sd[i] = np.sort(knn.data[knn.indptr[i]: knn.indptr[i + 1]])[
+                    median_k - 1
+                    ]
 
-        x, y, dists = find(knn)
+        # define decay as sample's pseudomedian k-nearest-neighbor
+        pm = np.interp(adap_sd, (adap_sd.min(), adap_sd.max()), (2, self.n_neighbors))
 
-        if self.kernel_use == 'setty':
-           dists = dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
+        # adaptive bandwidth
+        bandwidth = dist[:, self.n_neighbors - 1]
+        # check for zero bandwidth
+        bandwidth = np.maximum(bandwidth, np.finfo(float).eps)
 
-        if self.kernel_use == 'sidarta':
-            dists = dists - (dists / adap_sd[x])  # Normalize by relative contribution to neighborhood size.
+        distances = [d for d in dist]
+        indices = [i for i in ind]
 
-        W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized informative distances
+        # construct anisotropic adaptive (radius and decay rate) kernel
+        kernel = np.concatenate([(distances[i] / bandwidth[i]) ** pm[i]
+                                 for i in range(len(distances))]
+                                )
 
-        # Adaptive kernel decay rate
-       #  adaptive_decay = np.exp( adaptive_std ** ( 1 / adaptive_std)
+        indices = np.concatenate(indices)
+        indptr = np.concatenate([[0], np.cumsum([len(d) for d in distances])])
+        self.K = csr_matrix((kernel, indices, indptr), shape=(self.N, self.N))
 
-        # Kernel construction
-        K = W + W.T
+        # construct new, anisotropic kernel
+        D = np.array(self.K.toarray().sum(1)).flatten()
+        if self.alpha > 0:
+            Kc = self.K.tocoo()
+            self.K.data = Kc.data / ((D[Kc.row] * D[Kc.col]) ** self.alpha)
 
-        self.kernel = K
+        # handle nan, zeros
+        self.K.data = np.where(np.isnan(self.K.data), 1, self.K.data)
 
         return self
 
-    def transform(self, data, n_eigs=None):
-        self.n_eigs = n_eigs
-
-        # Diffusion through Markov chain
-        D = np.ravel(self.kernel.sum(axis=1))
-        if self.alpha > 0:
-            # L_alpha
-            D[D != 0] = D[D != 0] ** (-self.alpha)
-            mat = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N])
-            kernel = mat.dot(self.kernel).dot(mat)
-            D = np.ravel(kernel.sum(axis=1))
-
-        D[D != 0] = 1 / D[D != 0]
-
-        # Setting the diffusion operator
-        T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
-
+    def transform(self, data, n_components=None):
+        if n_components is not None:
+            self.n_components = n_components
         # Eigen value decomposition
-        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=self.N)
+        D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
         D = np.real(D)
         V = np.real(V)
         inds = np.argsort(D)[::-1]
@@ -186,14 +184,11 @@ class Diffusor(TransformerMixin):
             V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
         # Create the results dictionary
-        self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
+        self.res = {'EigenVectors': V, 'EigenValues': D, 'kernel': self.K}
         self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
-        if not issparse(data):
-            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs)
-        mms = multi.fit(self.res).transform(self.res)
+        mms = multiscale.multiscale(self.res)
         self.res['StructureComponents'] = mms
 
         end = time.time()
@@ -203,7 +198,7 @@ class Diffusor(TransformerMixin):
 
         return self.res['StructureComponents']
 
-    def ind_dist_grad(self, data, n_eigs=None, dense=False):
+    def ind_dist_grad(self, data, n_components=None, dense=False):
         """Effectively computes on data. Also returns the normalized diffusion distances,
         indexes and gradient obtained by approximating the Laplace-Beltrami operator.
         :param plot_knee: Whether to plot the scree plot of diffusion eigenvalues.
@@ -212,76 +207,10 @@ class Diffusor(TransformerMixin):
         parameters that can make the process faster and more informational depending
         on your dataset. Read more at https://github.com/davisidarta/dbmap
         """
-        self.n_eigs = n_eigs
-        self.start_time = time.time()
-        self.N = data.shape[0]
-        if self.ann:
-            # Construct an approximate k-nearest-neighbors graph
-            anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
-                                      metric=self.ann_dist,
-                                      method='hnsw',
-                                      n_jobs=self.n_jobs,
-                                      M=self.M,
-                                      efC=self.efC,
-                                      efS=self.efS,
-                                      verbose=self.verbose)
-            anbrs = anbrs.fit(data)
-            self.ind, self.dists, self.grad, kneighbors_graph = anbrs.ind_dist_grad(data)
-            x, y, self.dists = find(self.dists)
-
-            # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
-            adaptive_k = int(np.floor(self.n_neighbors / 2))
-            adaptive_std = np.zeros(self.N)
-            for i in np.arange(len(adaptive_std)):
-                adaptive_std[i] = np.sort(kneighbors_graph.data[kneighbors_graph.indptr[i]: kneighbors_graph.indptr[i + 1]])[
-                    adaptive_k - 1
-                    ]
-        else:
-            # Construct a k-nearest-neighbors graph
-            nbrs = NearestNeighbors(n_neighbors=int(self.n_neighbors), metric=self.knn_dist, n_jobs=self.n_jobs).fit(
-                data)
-            knn = nbrs.kneighbors_graph(data, mode='distance')
-            # Normalize distances by the distance of median nearest neighbor to account for neighborhood size.
-            adaptive_k = int(np.floor(self.n_neighbors / 2))
-            nbrs = NearestNeighbors(n_neighbors=int(adaptive_k), metric='euclidean', n_jobs=self.n_jobs).fit(data)
-            adaptive_std = nbrs.kneighbors_graph(data, mode='distance').max(axis=1)
-            adaptive_std = np.ravel(adaptive_std.todense())
-            # Distance metrics
-            x, y, self.dists = find(knn)  # k-nearest-neighbor distances
-
-        if self.kernel_use == 'setty':
-            # X, y specific stds
-            self.dists = self.dists / adaptive_std[x]  # Normalize by the distance of median nearest neighbor
-
-        if self.kernel_use == 'sidarta':
-            # X, y specific stds
-            self.dists = self.dists - (self.dists / adaptive_std[x])  # Normalize by normalized contribution to neighborhood size.
-
-        W = csr_matrix((np.exp(-self.dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
-
-        # Kernel construction
-        self.kernel = W + W.T
-
-        # Diffusion through Markov chain
-        D = np.ravel(self.kernel.sum(axis=1))
-        if self.alpha > 0:
-            # L_alpha
-            D[D != 0] = D[D != 0] ** (-self.alpha)
-            mat = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N])
-            kernel = mat.dot(self.kernel).dot(mat)
-            D = np.ravel(kernel.sum(axis=1))
-
-        D[D != 0] = 1 / D[D != 0]
-
-        # Setting the diffusion operator
-        T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
-
+        if n_components is not None:
+            self.n_components = n_components
         # Eigen value decomposition
-        if dense:
-            from scipy.linalg import eig
-            D, V = eig(T.toarray())
-        else:
-            D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
+        D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
         D = np.real(D)
         V = np.real(V)
         inds = np.argsort(D)[::-1]
@@ -293,13 +222,14 @@ class Diffusor(TransformerMixin):
             V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
         # Create the results dictionary
-        self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
+        self.res = {'EigenVectors': V, 'EigenValues': D, 'kernel': self.K}
         self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
+        if not issparse(data):
+            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs)
-        mms = multi.fit(self.res)
-        mms = mms.transform(self.res)
+        mms = multiscale.multiscale(self.res)
+        self.res['StructureComponents'] = mms
 
         anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
                                   metric='cosine',
@@ -320,7 +250,7 @@ class Diffusor(TransformerMixin):
 
         return ind, dists, grad, graph
 
-    def transform_dict(self, data, n_eigs=None):
+    def transform_dict(self, data, n_components=None):
         """
         :return: Dictionary containing normalized and multiscaled Diffusion Components
         (['StructureComponents']), their eigenvalues ['EigenValues'], non-normalized
@@ -328,24 +258,12 @@ class Diffusor(TransformerMixin):
         into affinities (['kernel']).
         """
 
-        self.n_eigs = n_eigs
-
-        # Diffusion through Markov chain
-        D = np.ravel(self.kernel.sum(axis=1))
-        if self.alpha > 0:
-            # L_alpha
-            D[D != 0] = D[D != 0] ** (-self.alpha)
-            mat = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N])
-            kernel = mat.dot(self.kernel).dot(mat)
-            D = np.ravel(kernel.sum(axis=1))
-
-        D[D != 0] = 1 / D[D != 0]
-
-        # Setting the diffusion operator
-        T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.kernel)
-
+        if n_components is None:
+            n_components = self.n_components
+        else:
+            self.n_components = n_components
         # Eigen value decomposition
-        D, V = eigs(T, self.n_components, tol=1e-4, maxiter=1000)
+        D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
         D = np.real(D)
         V = np.real(V)
         inds = np.argsort(D)[::-1]
@@ -357,13 +275,13 @@ class Diffusor(TransformerMixin):
             V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
         # Create the results dictionary
-        self.res = {'T': T, 'EigenVectors': V, 'EigenValues': D, 'kernel': self.kernel}
+        self.res = {'EigenVectors': V, 'EigenValues': D, 'kernel': self.K}
         self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
+        if not issparse(data):
+            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
         self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
 
-        multi = multiscale.multiscale(n_eigs=self.n_eigs)
-        mms = multi.fit(self.res)
-        mms = mms.transform(self.res)
+        mms = multiscale.multiscale(self.res)
         self.res['StructureComponents'] = mms
 
         end = time.time()

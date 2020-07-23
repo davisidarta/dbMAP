@@ -81,7 +81,7 @@ class Diffusor(TransformerMixin):
                  efC=100,
                  efS=100,
                  knn_dist='cosine',
-                 verbose=True
+                 verbose=False
                  ):
         self.n_components = n_components
         self.n_neighbors = n_neighbors

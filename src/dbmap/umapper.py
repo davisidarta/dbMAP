@@ -50,7 +50,7 @@ from umap.nndescent import (
 )
 from umap.rp_tree import rptree_leaf_array, make_forest
 
-from . import spectral
+from . import spectral, ann
 
 from umap.utils import deheap_sort, submatrix
 from umap.layouts import (
@@ -280,14 +280,13 @@ def approximate_n_neighbors(data,
     """
     print(ts(), "Finding Approximate Nearest Neighbors...")
 
-    import dbmap as dm
     from scipy.sparse import csr_matrix, issparse
     if issparse(data):
         data = data.tocsr()
     else:
         data = csr_matrix(data)
 
-    anbrs = dm.ann.NMSlibTransformer(n_neighbors=n_neighbors,
+    anbrs = ann.NMSlibTransformer(n_neighbors=n_neighbors,
                                      metric=metric,
                                      method=method,
                                      n_jobs=n_jobs,

@@ -65,6 +65,12 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
     n_jobs: int (optional, default 1)
         number of threads to be used in computation. Defaults to 1. The algorithm is highly
         scalable to multi-threading.
+    M: int (optional, default 30)
+        defines the maximum number of neighbors in the zero and above-zero layers during HSNW
+        (Hierarchical Navigable Small World Graph). However, the actual default maximum number
+        of neighbors for the zero layer is 2*M.  A reasonable range for this parameter
+        is 5-100. For more information on HSNW, please check https://arxiv.org/abs/1603.09320.
+        HSNW is implemented in python via NMSlib. Please check more about NMSlib at https://github.com/nmslib/nmslib.
     efC: int (optional, default 100)
         A 'hnsw' parameter. Increasing this value improves the quality of a constructed graph
         and leads to higher accuracy of search. However this also leads to longer indexing times.
@@ -72,12 +78,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
     efS: int (optional, default 100)
         A 'hnsw' parameter. Similarly to efC, increasing this value improves recall at the
         expense of longer retrieval time. A reasonable range for this parameter is 100-2000.
-    M: int (optional, default 30)
-        defines the maximum number of neighbors in the zero and above-zero layers during HSNW
-        (Hierarchical Navigable Small World Graph). However, the actual default maximum number
-        of neighbors for the zero layer is 2*M.  A reasonable range for this parameter
-        is 5-100. For more information on HSNW, please check https://arxiv.org/abs/1603.09320.
-        HSNW is implemented in python via NMSlib. Please check more about NMSlib at https://github.com/nmslib/nmslib.
     dense: bool (optional, default False)
         Whether to force the algorithm to use dense data, such as np.ndarrays and pandas DataFrames.
     Returns
@@ -113,9 +113,10 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                  metric='cosine',
                  method='hnsw',
                  n_jobs=10,
+                 p=None,
+                 M=30,
                  efC=100,
                  efS=100,
-                 M=30,
                  dense=False,
                  verbose=False
                  ):
@@ -124,6 +125,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         self.method = method
         self.metric = metric
         self.n_jobs = n_jobs
+        self.p = p
         self.M = M
         self.efC = efC
         self.efS = efS
@@ -158,31 +160,32 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
         if issparse(data) and (not self.dense) and (not isinstance(data, np.ndarray)):
-            if self.metric not in ['levenshtein', 'hamming', 'jansen-shan']:
+            if self.metric not in ['levenshtein', 'hamming', 'jansen-shan', 'jaccard']:
                 self.space = {
                     'sqeuclidean': 'l2_sparse',
                     'euclidean': 'l2_sparse',
                     'cosine': 'cosinesimil_sparse_fast',
+                    'lp': ('lp_sparse:p='+str(self.p)),
                     'l1_sparse': 'l1_sparse',
                     'linf_sparse': 'linf_sparse',
                     'angular_sparse': 'angulardist_sparse_fast',
                     'negdotprod_sparse': 'negdotprod_sparse_fast',
-                    'jaccard': 'jaccard_sparse',
                 }[self.metric]
                 self.nmslib_ = nmslib.init(method=self.method,
                                            space=self.space,
                                            data_type=nmslib.DataType.SPARSE_VECTOR)
             else:
-                print('Metric ' + self.metric + 'available for dense spaces only. Converting to dense.')
+                print('Metric ' + self.metric + 'available for string data only. Trying to compute distances...')
                 data = data.toarray()
                 self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
-                                       data_type=nmslib.DataType.DENSE_VECTOR)
+                                       data_type=nmslib.DataType.OBJECT_AS_STRING)
         else:
             self.space = {
                 'sqeuclidean': 'l2',
                 'euclidean': 'l2',
                 'cosine': 'cosinesimil',
+                ('lp:p=' + str(self.p)): ('lp:p=' + str(self.p)),
                 'l1': 'l1',
                 'linf': 'linf',
                 'angular': 'angulardist',
@@ -271,12 +274,12 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                                                        n_samples_transform))
         if return_grad:
             x, y, dists = find(kneighbors_graph)
-    
+
             # Define gradients
             grad = []
             if self.metric not in ['sqeuclidean', 'euclidean', 'cosine', 'linf']:
                 print('Gradient undefined for metric \'' + self.metric + '\'. Returning empty array.')
-    
+
             if self.metric == 'cosine':
                 norm_x = 0.0
                 norm_y = 0.0
@@ -289,13 +292,13 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                     grad = np.zeros(x.shape)
                 else:
                     grad = -(x * dists - y * norm_x) / np.sqrt(norm_x ** 3 * norm_y)
-    
+
             if self.metric == 'euclidean':
                 grad = x - y / (1e-6 + np.sqrt(dists))
-    
+
             if self.metric == 'sqeuclidean':
                 grad = x - y / (1e-6 + dists)
-    
+
             if self.metric == 'linf':
                 result = 0.0
                 max_i = 0
@@ -312,7 +315,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         if self.verbose:
             print('kNN time total=%f (sec), per query=%f (sec), per query adjusted for thread number=%f (sec)' %
                   (end - start, float(end - start) / query_qty, self.n_jobs * float(end - start) / query_qty))
-        
+
         if return_graph and return_grad:
             return indices, distances, grad, kneighbors_graph
         if return_graph and not return_grad:
@@ -325,7 +328,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
 
     def test_efficiency(self, data, data_use=0.1):
-        """Test that NMSlibTransformer and KNeighborsTransformer give same results
+        """Test if NMSlibTransformer and KNeighborsTransformer give same results
         """
         self.data_use = data_use
 

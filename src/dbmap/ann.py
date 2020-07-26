@@ -45,6 +45,9 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         accepted NMSLIB metrics. Defaults to 'cosine'. Accepted metrics include:
         -'sqeuclidean'
         -'euclidean'
+        -'lp' : a general L-p metric. Requires setting p. For p=2, returns the euclidean distance.
+                for p=1, returns the manhattan distance. Supports fractional p's of the form 1/2eK,
+                K being a small integer.
         -'l1'
         -'cosine'
         -'angular'

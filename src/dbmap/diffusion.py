@@ -163,7 +163,7 @@ class Diffusor(TransformerMixin):
         pm = np.interp(adap_sd, (adap_sd.min(), adap_sd.max()), (2, self.n_neighbors))
 
         # adaptive neighborhood size
-        if self.kernel_use == 'adaptive' or self.kernel_use == 'decay_adaptive':
+        if self.kernel_use == 'simple_adaptive' or self.kernel_use == 'decay_adaptive':
             # increase neighbor search:
             anbrs_new = ann.NMSlibTransformer(n_neighbors=int(self.n_neighbors + (self.n_neighbors - pm.max())),
                                               metric=self.ann_dist,
@@ -478,4 +478,3 @@ class Diffusor(TransformerMixin):
               (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
         return self.res
-

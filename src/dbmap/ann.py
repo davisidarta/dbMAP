@@ -45,10 +45,8 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         accepted NMSLIB metrics. Defaults to 'cosine'. Accepted metrics include:
         -'sqeuclidean'
         -'euclidean'
-        -'lp' : a general L-p metric. Requires setting p. For p=2, returns the euclidean distance.
-                for p=1, returns the manhattan distance. Supports fractional p's of the form 1/2eK,
-                K being a small integer.
         -'l1'
+        -'lp' - requires setting the parameter `p`
         -'cosine'
         -'angular'
         -'negdotprod'
@@ -141,7 +139,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         # see more metrics in the manual
         # https://github.com/nmslib/nmslib/tree/master/manual
 
-
         if self.dense:
             self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
@@ -160,7 +157,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)
 
-        index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
+        index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 2}
 
         if issparse(data) and (not self.dense) and (not isinstance(data, np.ndarray)):
             if self.metric not in ['levenshtein', 'hamming', 'jansen-shan', 'jaccard']:
@@ -168,27 +165,33 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                     'sqeuclidean': 'l2_sparse',
                     'euclidean': 'l2_sparse',
                     'cosine': 'cosinesimil_sparse_fast',
-                    'lp': ('lp_sparse:p='+str(self.p)),
+                    'lp': 'lp_sparse',
                     'l1_sparse': 'l1_sparse',
                     'linf_sparse': 'linf_sparse',
                     'angular_sparse': 'angulardist_sparse_fast',
                     'negdotprod_sparse': 'negdotprod_sparse_fast',
                 }[self.metric]
-                self.nmslib_ = nmslib.init(method=self.method,
-                                           space=self.space,
-                                           data_type=nmslib.DataType.SPARSE_VECTOR)
+                if self.metric == 'lp':
+                    self.nmslib_ = nmslib.init(method=self.method,
+                                               space=self.space,
+                                               space_params={'p': self.p},
+                                               data_type=nmslib.DataType.SPARSE_VECTOR)
+                else:
+                    self.nmslib_ = nmslib.init(method=self.method,
+                                               space=self.space,
+                                               data_type=nmslib.DataType.SPARSE_VECTOR)
             else:
                 print('Metric ' + self.metric + 'available for string data only. Trying to compute distances...')
                 data = data.toarray()
                 self.nmslib_ = nmslib.init(method=self.method,
-                                       space=self.space,
-                                       data_type=nmslib.DataType.OBJECT_AS_STRING)
+                                           space=self.space,
+                                           data_type=nmslib.DataType.OBJECT_AS_STRING)
         else:
             self.space = {
                 'sqeuclidean': 'l2',
                 'euclidean': 'l2',
                 'cosine': 'cosinesimil',
-                ('lp:p=' + str(self.p)): ('lp:p=' + str(self.p)),
+                'lp': 'lp',
                 'l1': 'l1',
                 'linf': 'linf',
                 'angular': 'angulardist',
@@ -198,9 +201,15 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 'jaccard': 'bit_jaccard',
                 'jansen-shan': 'jsmetrfastapprox'
             }[self.metric]
-            self.nmslib_ = nmslib.init(method=self.method,
-                                       space=self.space,
-                                       data_type=nmslib.DataType.DENSE_VECTOR)
+            if self.metric == 'lp':
+                self.nmslib_ = nmslib.init(method=self.method,
+                                           space=self.space,
+                                           space_params={'p': self.p},
+                                           data_type=nmslib.DataType.DENSE_VECTOR)
+            else:
+                self.nmslib_ = nmslib.init(method=self.method,
+                                           space=self.space,
+                                           data_type=nmslib.DataType.DENSE_VECTOR)
 
         self.nmslib_.addDataPointBatch(data)
         start = time.time()
@@ -327,8 +336,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
             return indices, distances, grad
         if not return_graph and not return_grad:
             return indices, distances
-
-
 
     def test_efficiency(self, data, data_use=0.1):
         """Test if NMSlibTransformer and KNeighborsTransformer give same results

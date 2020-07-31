@@ -85,6 +85,7 @@ class Diffusor(TransformerMixin):
                  kernel_use='orig',
                  transitions=True,
                  eigengap=True,
+                 norm=False,
                  verbose=True
                  ):
         self.n_components = n_components
@@ -101,6 +102,7 @@ class Diffusor(TransformerMixin):
         self.kernel_use = kernel_use
         self.transitions = transitions
         self.eigengap = eigengap
+        self.norm = norm
         self.verbose = verbose
 
     def fit(self, data):
@@ -183,11 +185,6 @@ class Diffusor(TransformerMixin):
                     int(pm[i])
                 ]
 
-        if self.kernel_use == 'orig':
-            # X, y specific stds
-            dists = dists / adap_sd[x]  # Normalize by the distance of median nearest neighbor
-            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
-
         if self.kernel_use == 'simple':
             # X, y specific stds
             dists = dists / adap_sd[x]  # Normalize by the distance of median nearest neighbor
@@ -200,13 +197,12 @@ class Diffusor(TransformerMixin):
 
         if self.kernel_use == 'decay':
             # X, y specific stds
-            dists = (dists / adap_sd[x]) ** np.power(2, (self.n_neighbors - pm[x] / pm[x]))
+            dists = (dists / adap_sd[x]) ** np.power(2, ((self.n_neighbors - pm[x]) / pm[x]))
             W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
         if self.kernel_use == 'decay_adaptive':
             # X, y specific stds
-            dists = (dists_new / adap_nbr[x_new]) ** np.power(2, (self.n_neighbors - pm[x_new] / pm[
-                x_new]))  # Normalize by normalized contribution to neighborhood size.
+            dists = (dists_new / adap_nbr[x_new]) ** np.power(2, ((self.n_neighbors - pm[x_new]) / pm[x_new]))  # Normalize by normalized contribution to neighborhood size.
             W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])  # Normalized distances
 
         # Kernel construction
@@ -228,7 +224,7 @@ class Diffusor(TransformerMixin):
         D[D != 0] = 1 / D[D != 0]
 
         # Setting the diffusion operator
-        if self.kernel_use == 'orig':
+        if not self.norm:
             self.T = csr_matrix((D, (range(self.N), range(self.N))), shape=[self.N, self.N]).dot(self.K)
         else:
             self.K = kernel
@@ -247,37 +243,59 @@ class Diffusor(TransformerMixin):
             multiplier = self.N // 10e4
             # initial eigen value decomposition
             if self.transitions:
-                D, V = self.spectral(self.T, n_components=self.n_components)
+                D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
             else:
-                D, V = self.spectral(self.K, n_components=self.n_components)
+                D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
+            D = np.real(D)
+            V = np.real(V)
+            inds = np.argsort(D)[::-1]
+            D = D[inds]
+            V = V[:, inds]
+            # Normalize by the first diffusion component
+            for i in range(V.shape[1]):
+                V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
             vals = np.array(V)
             pos = np.sum(vals > 0, axis=0)
             residual = np.sum(vals < 0, axis=0)
 
-            if self.eigengap and residual < 1:
+            if self.eigengap and len(residual) < 1:
                 #expand eigendecomposition
+                target = self.n_components * multiplier
                 while residual < 3:
-                    target = self.n_components * multiplier
                     print('Eigengap not found for determined number of components. Expanding eigendecomposition to '
                           + str(target) + 'components.')
                     if self.transitions:
-                        D, V = self.spectral(self.T, n_components=target)
+                        D, V = eigs(self.T, target, tol=1e-4, maxiter=self.N)
                     else:
-                        D, V = self.spectral(self.K, n_components=target)
+                        D, V = eigs(self.K, target, tol=1e-4, maxiter=self.N)
+                    D = np.real(D)
+                    V = np.real(V)
+                    inds = np.argsort(D)[::-1]
+                    D = D[inds]
+                    V = V[:, inds]
+                    # Normalize by the first diffusion component
+                    for i in range(V.shape[1]):
+                        V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
                     vals = np.array(V)
                     residual = np.sum(vals < 0, axis=0)
                     target = target * 2
 
-            if residual > 30:
-                self.n_components = pos + 15
+            if len(residual) > 30:
+                self.n_components = len(pos) + 15
                 # adapted eigen value decomposition
                 if self.transitions:
-                    D, V = self.spectral(self.T, n_components=self.n_components)
+                    D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
                 else:
-                    D, V = self.spectral(self.K, n_components=self.n_components)
-                vals = np.array(V)
-                residual = np.sum(vals < 0, axis=0)
+                    D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
+                D = np.real(D)
+                V = np.real(V)
+                inds = np.argsort(D)[::-1]
+                D = D[inds]
+                V = V[:, inds]
+                # Normalize by the first diffusion component
+                for i in range(V.shape[1]):
+                    V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
 
 
@@ -314,37 +332,58 @@ class Diffusor(TransformerMixin):
             multiplier = self.N // 10e4
             # initial eigen value decomposition
             if self.transitions:
-                D, V = self.spectral(self.T, n_components=self.n_components)
+                D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
             else:
-                D, V = self.spectral(self.K, n_components=self.n_components)
-
+                D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
+            D = np.real(D)
+            V = np.real(V)
+            inds = np.argsort(D)[::-1]
+            D = D[inds]
+            V = V[:, inds]
+            # Normalize by the first diffusion component
+            for i in range(V.shape[1]):
+                V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
             vals = np.array(V)
             pos = np.sum(vals > 0, axis=0)
             residual = np.sum(vals < 0, axis=0)
 
-            if self.eigengap and residual < 1:
+            if self.eigengap and len(residual) < 1:
                 #expand eigendecomposition
+                target = self.n_components * multiplier
                 while residual < 3:
-                    target = self.n_components * multiplier
                     print('Eigengap not found for determined number of components. Expanding eigendecomposition to '
                           + str(target) + 'components.')
                     if self.transitions:
-                        D, V = self.spectral(self.T, n_components=target)
+                        D, V = eigs(self.T, target, tol=1e-4, maxiter=self.N)
                     else:
-                        D, V = self.spectral(self.K, n_components=target)
+                        D, V = eigs(self.K, target, tol=1e-4, maxiter=self.N)
+                    D = np.real(D)
+                    V = np.real(V)
+                    inds = np.argsort(D)[::-1]
+                    D = D[inds]
+                    V = V[:, inds]
+                    # Normalize by the first diffusion component
+                    for i in range(V.shape[1]):
+                        V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
                     vals = np.array(V)
                     residual = np.sum(vals < 0, axis=0)
                     target = target * 2
 
-            if residual > 30:
-                self.n_components = pos + 15
+            if len(residual) > 30:
+                self.n_components = len(pos) + 15
                 # adapted eigen value decomposition
                 if self.transitions:
-                    D, V = self.spectral(self.T, n_components=self.n_components)
+                    D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
                 else:
-                    D, V = self.spectral(self.K, n_components=self.n_components)
-                vals = np.array(V)
-                residual = np.sum(vals < 0, axis=0)
+                    D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
+                D = np.real(D)
+                V = np.real(V)
+                inds = np.argsort(D)[::-1]
+                D = D[inds]
+                V = V[:, inds]
+                # Normalize by the first diffusion component
+                for i in range(V.shape[1]):
+                    V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
 
         # Create the results dictionary
@@ -400,7 +439,7 @@ class Diffusor(TransformerMixin):
             pos = np.sum(vals > 0, axis=0)
             residual = np.sum(vals < 0, axis=0)
 
-            if self.eigengap and residual < 1:
+            if self.eigengap and len(residual) < 1:
                 #expand eigendecomposition
                 while residual < 3:
                     target = self.n_components * multiplier
@@ -414,8 +453,8 @@ class Diffusor(TransformerMixin):
                     residual = np.sum(vals < 0, axis=0)
                     target = target * 2
 
-            if residual > 30:
-                self.n_components = pos + 15
+            if len(residual) > 30:
+                self.n_components = len(pos) + 15
                 # adapted eigen value decomposition
                 if self.transitions:
                     D, V = self.spectral(self.T, n_components=self.n_components)
@@ -440,17 +479,3 @@ class Diffusor(TransformerMixin):
 
         return self.res
 
-    def spectral(self, n_components=None, tol=1e-4, maxiter=10e4):
-        # Eigen value decomposition
-        D, V = eigs(self.K, n_components, tol=tol, maxiter=maxiter)
-        D = np.real(D)
-        V = np.real(V)
-        inds = np.argsort(D)[::-1]
-        D = D[inds]
-        V = V[:, inds]
-
-        # Normalize by the first diffusion component
-        for i in range(V.shape[1]):
-            V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
-
-        return D, V

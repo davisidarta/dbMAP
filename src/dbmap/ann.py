@@ -157,7 +157,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                 if isinstance(data, pd.DataFrame):
                     data = csr_matrix(data.values.T)
 
-        index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 2}
+        index_time_params = {'M': self.M, 'indexThreadQty': self.n_jobs, 'efConstruction': self.efC, 'post': 0}
 
         if issparse(data) and (not self.dense) and (not isinstance(data, np.ndarray)):
             if self.metric not in ['levenshtein', 'hamming', 'jansen-shan', 'jaccard']:
@@ -171,7 +171,10 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                     'angular_sparse': 'angulardist_sparse_fast',
                     'negdotprod_sparse': 'negdotprod_sparse_fast',
                 }[self.metric]
-                if self.metric == 'lp':
+                if self.metric == 'lp' and selp.p is None:
+                    print('Metric set to `lp` but `p` not set. Setting `p` as 0.5.')
+
+                if self.metric == 'lp' and selp.p is not None:
                     self.nmslib_ = nmslib.init(method=self.method,
                                                space=self.space,
                                                space_params={'p': self.p},

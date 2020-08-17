@@ -79,7 +79,7 @@ class Diffusor(TransformerMixin):
                  efC=100,
                  efS=100,
                  knn_dist='cosine',
-                 kernel_use='orig',
+                 kernel_use='decay',
                  transitions=True,
                  eigengap=True,
                  norm=False,

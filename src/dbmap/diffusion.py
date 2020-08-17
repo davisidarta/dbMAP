@@ -22,9 +22,7 @@ print(__doc__)
 class Diffusor(TransformerMixin):
     """
     Sklearn estimator for using fast anisotropic diffusion with an anisotropic
-    adaptive algorithm as proposed by Setty et al, 2018, and optimized by Sidarta-Oliveira, 2020.
-
-    Parameters
+    adaptive algorithm (Coiffman et al., 2005, Setty et al., 2018, Sidarta-Oliveira et al., 2020).
     ----------
     n_components : Number of diffusion components to compute. Defaults to 100. We suggest larger values if
                    analyzing more than 10,000 cells.

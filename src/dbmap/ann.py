@@ -171,10 +171,10 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
                     'angular_sparse': 'angulardist_sparse_fast',
                     'negdotprod_sparse': 'negdotprod_sparse_fast',
                 }[self.metric]
-                if self.metric == 'lp' and selp.p is None:
+                if self.metric == 'lp' and self.p is None:
                     print('Metric set to `lp` but `p` not set. Setting `p` as 0.5.')
 
-                if self.metric == 'lp' and selp.p is not None:
+                if self.metric == 'lp' and self.p is not None:
                     self.nmslib_ = nmslib.init(method=self.method,
                                                space=self.space,
                                                space_params={'p': self.p},

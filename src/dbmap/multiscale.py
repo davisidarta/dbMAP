@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from kneed import KneeLocator
-import matplotlib.pyplot as plt
 
 def multiscale(res, n_eigs=None, sensitivity=10, verbose=True):
     """Determine multi scale space of the data
@@ -38,4 +37,3 @@ def multiscale(res, n_eigs=None, sensitivity=10, verbose=True):
             print('Automatically selected and multiscaled ' + str(round(n_eigs)) +
                   ' diffusion components.')
     return data
-

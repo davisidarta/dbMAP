@@ -2,6 +2,7 @@
 # Author: Davi Sidarta-Oliveira
 # School of Medical Sciences,University of Campinas,Brazil
 # contact: davisidarta@gmail.com
+# Please note that this code has several contributions from Manu Setty et al, Nature
 ######################################
 import time
 import numpy as np
@@ -22,7 +23,9 @@ print(__doc__)
 class Diffusor(TransformerMixin):
     """
     Sklearn estimator for using fast anisotropic diffusion with an anisotropic
-    adaptive algorithm (Coiffman et al., 2005, Setty et al., 2018, Sidarta-Oliveira et al., 2020).
+    adaptive algorithm as proposed by Setty et al, 2018, and optimized by Sidarta-Oliveira, 2020.
+
+    Parameters
     ----------
     n_components : Number of diffusion components to compute. Defaults to 100. We suggest larger values if
                    analyzing more than 10,000 cells.
@@ -114,10 +117,12 @@ class Diffusor(TransformerMixin):
         if self.kernel_use == 'orig' and self.transitions == 'False':
             print('The original kernel implementation used transitions computation. Set `transitions` to `True`'
                   'for similar results.')
+        if self.kernel_use not in ['simple', 'simple_adaptive', 'decay', 'decay_adaptive']:
+            raise Exception('Kernel must be either \'simple\', \'simple_adaptive\', \'decay\' or \'decay_adaptive\'.') 
         if self.ann:
             if self.ann_dist == 'lp' and self.p < 1:
                 print('Fractional L norms are slower to compute. Computations are faster for fractions'
-                      'of the form \'1/2ek\', where k is a small integer (i.g. 0.5, 0.25) ')
+                      ' of the form \'1/2ek\', where k is a small integer (i.g. 0.5, 0.25) ')
             # Construct an approximate k-nearest-neighbors graph
             anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
                                           metric=self.ann_dist,
@@ -184,22 +189,22 @@ class Diffusor(TransformerMixin):
 
         if self.kernel_use == 'simple':
             # X, y specific stds
-            dists = dists / adap_sd[x]  # Normalize by the distance of median nearest neighbor
+            dists = dists / (adap_sd[x] + 1e-10)  # Normalize by the distance of median nearest neighbor
             W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
         if self.kernel_use == 'simple_adaptive':
             # X, y specific stds
-            dists = dists_new / adap_nbr[x_new]  # Normalize by normalized contribution to neighborhood size.
+            dists = dists_new / (adap_nbr[x_new] + 1e-10)  # Normalize by normalized contribution to neighborhood size.
             W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])  # Normalized distances
 
         if self.kernel_use == 'decay':
             # X, y specific stds
-            dists = (dists / adap_sd[x]) ** np.power(2, ((self.n_neighbors - pm[x]) / pm[x]))
+            dists = (dists / (adap_sd[x] + 1e-10)) ** np.power(2, ((self.n_neighbors - pm[x]) / pm[x]))
             W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
 
         if self.kernel_use == 'decay_adaptive':
             # X, y specific stds
-            dists = (dists_new / adap_nbr[x_new]) ** np.power(2, ((self.n_neighbors - pm[x_new]) / pm[x_new]))  # Normalize by normalized contribution to neighborhood size.
+            dists = (dists_new / (adap_nbr[x_new]+ 1e-10)) ** np.power(2, (((int(self.n_neighbors + (self.n_neighbors - pm.max()))) - pm[x_new]) / pm[x_new]))  # Normalize by normalized contribution to neighborhood size.
             W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])  # Normalized distances
 
         # Kernel construction
@@ -230,17 +235,55 @@ class Diffusor(TransformerMixin):
         return self
 
 
-    def transform(self, data, n_components=None):
+    def transform(self, data):
 
-        if n_components is not None:
-            self.n_components = n_components
+        # Fit an optimal number of components based on the eigengap
+        # Use user's  or default initial guess
+        multiplier = self.N // 10e4
+        # initial eigen value decomposition
+        if self.transitions:
+            D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
         else:
-            # Fit an optimal number of components based on the eigengap
-            # Use user's  or default initial guess
-            multiplier = self.N // 10e4
-            # initial eigen value decomposition
+            D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
+        D = np.real(D)
+        V = np.real(V)
+        inds = np.argsort(D)[::-1]
+        D = D[inds]
+        V = V[:, inds]
+        # Normalize by the first diffusion component
+        for i in range(V.shape[1]):
+            V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
+        vals = np.array(V)
+        pos = np.sum(vals > 0, axis=0)
+        residual = np.sum(vals < 0, axis=0)
+
+        if self.eigengap and len(residual) < 1:
+            #expand eigendecomposition
+            target = self.n_components * multiplier
+            while residual < 3:
+                print('Eigengap not found for determined number of components. Expanding eigendecomposition to '
+                      + str(target) + 'components.')
+                if self.transitions:
+                    D, V = eigs(self.T, target, tol=1e-4, maxiter=self.N)
+                else:
+                    D, V = eigs(self.K, target, tol=1e-4, maxiter=self.N)
+                D = np.real(D)
+                V = np.real(V)
+                inds = np.argsort(D)[::-1]
+                D = D[inds]
+                V = V[:, inds]
+                # Normalize by the first diffusion component
+                for i in range(V.shape[1]):
+                    V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
+                vals = np.array(V)
+                residual = np.sum(vals < 0, axis=0)
+                target = target * 2
+
+        if len(residual) > 30:
+            self.n_components = len(pos) + 15
+            # adapted eigen value decomposition
             if self.transitions:
-                D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
+               D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
             else:
                 D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
             D = np.real(D)
@@ -251,48 +294,6 @@ class Diffusor(TransformerMixin):
             # Normalize by the first diffusion component
             for i in range(V.shape[1]):
                 V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
-
-            vals = np.array(V)
-            pos = np.sum(vals > 0, axis=0)
-            residual = np.sum(vals < 0, axis=0)
-
-            if self.eigengap and len(residual) < 1:
-                #expand eigendecomposition
-                target = self.n_components * multiplier
-                while residual < 3:
-                    print('Eigengap not found for determined number of components. Expanding eigendecomposition to '
-                          + str(target) + 'components.')
-                    if self.transitions:
-                        D, V = eigs(self.T, target, tol=1e-4, maxiter=self.N)
-                    else:
-                        D, V = eigs(self.K, target, tol=1e-4, maxiter=self.N)
-                    D = np.real(D)
-                    V = np.real(V)
-                    inds = np.argsort(D)[::-1]
-                    D = D[inds]
-                    V = V[:, inds]
-                    # Normalize by the first diffusion component
-                    for i in range(V.shape[1]):
-                        V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
-                    vals = np.array(V)
-                    residual = np.sum(vals < 0, axis=0)
-                    target = target * 2
-
-            if len(residual) > 30:
-                self.n_components = len(pos) + 15
-                # adapted eigen value decomposition
-                if self.transitions:
-                    D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
-                else:
-                    D, V = eigs(self.K, self.n_components, tol=1e-4, maxiter=self.N)
-                D = np.real(D)
-                V = np.real(V)
-                inds = np.argsort(D)[::-1]
-                D = D[inds]
-                V = V[:, inds]
-                # Normalize by the first diffusion component
-                for i in range(V.shape[1]):
-                    V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
 
 
@@ -412,66 +413,12 @@ class Diffusor(TransformerMixin):
 
         return ind, dists, grad, graph
 
-    def transform_dict(self, data, n_components=None):
+    def return_dict(self):
         """
         :return: Dictionary containing normalized and multiscaled Diffusion Components
         (['StructureComponents']), their eigenvalues ['EigenValues'], non-normalized
         components (['EigenVectors']) and the kernel used for transformation of distances
         into affinities (['kernel']).
         """
-
-        if n_components is not None:
-            self.n_components = n_components
-        else:
-            # Fit an optimal number of components based on the eigengap
-            # Use user's  or default initial guess
-            multiplier = self.N // 10e4
-            # initial eigen value decomposition
-            if self.transitions:
-                D, V = self.spectral(self.T, n_components=self.n_components)
-            else:
-                D, V = self.spectral(self.K, n_components=self.n_components)
-
-            vals = np.array(V)
-            pos = np.sum(vals > 0, axis=0)
-            residual = np.sum(vals < 0, axis=0)
-
-            if self.eigengap and len(residual) < 1:
-                #expand eigendecomposition
-                while residual < 3:
-                    target = self.n_components * multiplier
-                    print('Eigengap not found for determined number of components. Expanding eigendecomposition to '
-                          + str(target) + 'components.')
-                    if self.transitions:
-                        D, V = self.spectral(self.T, n_components=target)
-                    else:
-                        D, V = self.spectral(self.K, n_components=target)
-                    vals = np.array(V)
-                    residual = np.sum(vals < 0, axis=0)
-                    target = target * 2
-
-            if len(residual) > 30:
-                self.n_components = len(pos) + 15
-                # adapted eigen value decomposition
-                if self.transitions:
-                    D, V = self.spectral(self.T, n_components=self.n_components)
-                else:
-                    D, V = self.spectral(self.K, n_components=self.n_components)
-                vals = np.array(V)
-                residual = np.sum(vals < 0, axis=0)
-
-        # Create the results dictionary
-        self.res = {'EigenVectors': V, 'EigenValues': D, 'kernel': self.K}
-        self.res['EigenVectors'] = pd.DataFrame(self.res['EigenVectors'])
-        if not issparse(data):
-            self.res['EigenValues'] = pd.Series(self.res['EigenValues'])
-        self.res["EigenValues"] = pd.Series(self.res["EigenValues"])
-
-        mms = multiscale.multiscale(self.res)
-        self.res['StructureComponents'] = mms
-
-        end = time.time()
-        print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
-              (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
         return self.res

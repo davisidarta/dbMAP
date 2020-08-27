@@ -23,8 +23,8 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
    dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
 
 # Usage - Python
-  dbMAP consists of two main steps: an adaptive diffusion maps isotropic reproduction of the initial input, followed by an accelerated UMAP layout. dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. The adaptive diffusion reduction is recommended over PCA if data is significantly non-linear, and is useful for clustering and downstream analysis. The dbMAP layout is also useful for big data visualization. 
-  Here follows some examples on using dbMAP implemented algorithms, including fast neighborhood search, adaptive multiscaled diffusion maps and an accelerated UMAP layout:
+  dbMAP consists of two main steps: an adaptive anisotropic reproduction of the initial input diffusion structure, followed by an accelerated UMAP or graph layout. dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. The adaptive diffusion reduction is recommended over PCA if data is significantly non-linear, and is useful for clustering and downstream analysis. The UMAP and graph layouts are also useful for big data visualization. 
+  Here follows some examples on using dbMAP implemented algorithms, including fast neighborhood search, adaptive multiscaled diffusion maps and accelerated UMAP and graph layouts:
   
   ## 1 - Fast approximate k-nearest-neighbors
   dbMAP implements the NMSlibTransformer() class, which calls nmslib to perform a fast and accurate approximate nearest neighbor search. The NMSlibTransformer() class has several methods to compute and retrieve this information, and an additional function to measure it's accuracy.

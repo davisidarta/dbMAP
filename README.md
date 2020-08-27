@@ -5,7 +5,7 @@
 
 
 # dbMAP (diffusion-based Manifold Approximation and Projection)
-A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a fast, accurate and modularized dimensional reduction approach. dbMAP includes a flexible and extendable wrapper for nmslib, for state-of-the-art approximate nearest-neighbors search, and also a handful of other dimensional reduction methods for comparisons. For more information on dbMAP, check our preprint at SneakPeak: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3582067
+A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a fast, accurate and modularized dimensional reduction approach. dbMAP includes a flexible and extendable wrapper for nmslib, for state-of-the-art approximate nearest-neighbors search, functions for fast computation of diffusion dynamics and multiscale maps, and a fast implementation of adapted graph and UMAP layouts. For more information on dbMAP, check our preprint at SneakPeak: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3582067
 
 # Installation and dependencies
 
@@ -96,7 +96,7 @@ A python module for running diffusion-based Manifold Approximaiton and Projectio
    res = dm.diffusion.Diffusor().fit(data).transform(data)
    
    # Embed graph with a fast approximate UMAP layout:
-   emb = dm.umapper.UMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
+   emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
    
    plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
    plt.gca().set_aspect('equal', 'datalim')

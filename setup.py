@@ -17,7 +17,7 @@ with open("README.md", "r") as fh:
 
 
 setup(name='dbmap',
-      version='1.1.2',
+      version='1.1.3',
       description='dbMAP - fast, accurate and generalized dimensional reduction for explorative data analysis',
       long_description=long_description,
       long_description_content_type="text/markdown",

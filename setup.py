@@ -1,8 +1,5 @@
 from setuptools import find_packages, setup
-
-# get version
-with open('dbmap/version.py') as f:
-    exec(f.read())
+from dbmap.version import __version__
 
 setup(name='dbmap',
       version=__version__,

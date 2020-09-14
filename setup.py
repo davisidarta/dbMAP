@@ -1,33 +1,21 @@
-import sys
-import shutil
-from subprocess import call
-from setuptools import setup
-from warnings import warn
-
-if sys.version_info.major != 3:
-    raise RuntimeError('dbMAP requires Python 3')
+from setuptools import find_packages, setup
 
 # get version
-with open('src/dbmap/version.py') as f:
+with open('dbmap/version.py') as f:
     exec(f.read())
 
-# Set README as project description
-with open("README.md", "r") as fh:
-    long_description = fh.read()
-
-
 setup(name='dbmap',
-      version='1.1.3',
+      version=__version__,
+      packages=find_packages(),
       description='dbMAP - fast, accurate and generalized dimensional reduction for explorative data analysis',
-      long_description=long_description,
+      long_description=open("README.md").read(),
       long_description_content_type="text/markdown",
       url='https://github.com/davisidarta/dbMAP',
       download_url='https://github.com/davisidarta/dbMAP/archive/1.1.1.tar.gz',
       author='Davi Sidarta-Oliveira',
       author_email='davisidarta@gmail.com',
       keywords=['Dimensionality Reduction', 'Big Data', 'Diffusion Maps', 'Nearest-neighbors'],
-      package_dir={'': 'src'},
-      packages=['dbmap'],
+      license="GNU General Public License v3.0",
       install_requires=[
           'numpy>=1.14.2',
           'pandas>=0.22.0',
@@ -43,4 +31,5 @@ setup(name='dbmap',
           'scikit-build',
           'nmslib'
       ],
+      python_requires=">=3.6",
       )

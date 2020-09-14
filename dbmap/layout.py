@@ -2,8 +2,7 @@ from typing import Union, Optional
 
 import numpy as np
 from numpy import random
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.manifold import SpectralEmbedding
+from sklearn.base import TransformerMixin
 import networkx as nx
 AnyRandom = Union[None, int, random.RandomState]  # maybe in the future random.Generator
 

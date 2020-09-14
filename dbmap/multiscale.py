@@ -11,7 +11,7 @@ def multiscale(res, n_eigs=None):
         vals = np.array(res["EigenValues"])
         n_eigs = np.sum( vals > 0, axis=0)
     # Multiscale diffusion
-    use_eigs = list(range(0, n_eigs))
+    use_eigs = list(range(n_eigs))
     ev = res['EigenValues']
     eig_vals = np.ravel(ev.reindex(use_eigs))
     ms_data = res["EigenVectors"].values[:, use_eigs] * (eig_vals / (1 - eig_vals))
@@ -19,4 +19,3 @@ def multiscale(res, n_eigs=None):
     print('Automatically selected and multiscaled ' + str(round(n_eigs)) +
           ' diffusion components.')
     return ms_data
-          

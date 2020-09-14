@@ -5,7 +5,6 @@ from __future__ import print_function
 
 import locale
 from warnings import warn
-import time
 
 from scipy.optimize import curve_fit
 from sklearn.base import BaseEstimator

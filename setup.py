@@ -31,5 +31,5 @@ setup(name='dbmap',
           'scikit-build',
           'nmslib'
       ],
-      python_requires=">=3.6",
+      python_requires=">=3",
       )

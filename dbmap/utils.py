@@ -1,15 +1,11 @@
 """
 Utility functions
 """
-from collections import namedtuple
-import logging
-import warnings
 
 import pandas as pd
 import numpy as np
 import scipy.sparse as sps
 import numba as n
-from numba import njit, jitclass, prange
 
 @n.njit(parallel=True)
 def fast_knn_indices(X, n_neighbors):

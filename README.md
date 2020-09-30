@@ -1,5 +1,6 @@
 [![Latest PyPI version](https://img.shields.io/pypi/v/dbmap.svg)](https://pypi.org/project/dbmap/)
 [![License: GPL-2.0](https://img.shields.io/badge/License-GNU--GLP%20v2.0-green.svg)](https://opensource.org/licenses/GPL-2.0)
+[![Documentation Status](https://readthedocs.org/projects/dbmap/badge/?version=latest)](https://dbmap.readthedocs.io/en/latest/?badge=latest)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/DaviSidarta.svg?label=Follow%20%40davisidarta&style=social)](https://twitter.com/davisidarta)
 
 

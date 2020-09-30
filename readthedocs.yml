@@ -1,5 +1,5 @@
 version: 2
 
 mkdocs:
-  configuration: mkdocs.yml
+  configuration: null
   fail_on_warning: false

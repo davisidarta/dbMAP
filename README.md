@@ -7,6 +7,8 @@
 # dbMAP (diffusion-based Manifold Approximation and Projection)
 A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a fast, accurate and modularized dimensional reduction approach. dbMAP includes a flexible and extendable wrapper for nmslib, for state-of-the-art approximate nearest-neighbors search, functions for fast computation of diffusion dynamics and multiscale maps, and a fast implementation of adapted graph and UMAP layouts. dbMAP was originally designed for the fast analysis and visualization of single-cell omics data - yet, as a general dimensional reduction approach, it can find use in virtually any field in which analysis of high-dimensional data is challenging. For more information on dbMAP, check our preprint at SneakPeak: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3582067
 
+Further documentation is available at [Read the Docs](https://dbmap.readthedocs.io/en/latest/).
+
 # Installation and dependencies
 
    Prior to installing dbMAP, make sure you have scikit-build and cmake available in your system. These are required for installation.

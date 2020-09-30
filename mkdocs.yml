@@ -2,8 +2,6 @@ site_name: dbMAP
 nav:
     - Home: index.md
     - Install: installation.md
-    - Tutorials: tutorial.md
-    - Single-cell analysis: singlecell.md 
     - API: docs.md
 theme:
     name: readthedocs

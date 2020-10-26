@@ -53,7 +53,7 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    inds, dists, grad, knn = anbrs.ind_dist_grad(data)
 
    # Test approximate-neighbors accuracy:
-   anbrs.test_efficincy(data)
+   anbrs.test_efficiency(data)
    ```
 
   ## 2 - Fast adaptive multiscaled diffusion maps

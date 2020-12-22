@@ -1,8 +1,7 @@
 #####################################
 # Author: Davi Sidarta-Oliveira
 # School of Medical Sciences,University of Campinas,Brazil
-# contact: davisidarta@gmail.com
-# Please note that this code has several contributions from Manu Setty et al, Nature
+# contact: davisidarta@fcm.unicamp.com
 ######################################
 import time
 import numpy as np

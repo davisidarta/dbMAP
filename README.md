@@ -130,12 +130,12 @@ As we prepare for a second version of the manuscript, extensive benchmarking of 
 
 # Citation
 
-We kindly ask that you cite dbMAP if you find it useful for your work.
+We kindly ask that you cite dbMAP preprint if you find it useful for your work:
 
-```
 Sidarta-Oliveira, D., & Velloso, L. (2020). Comprehensive Visualization of High-Dimensional Single-Cell Data With&nbsp;Diffusion-Based Manifold Approximation and Projection(dbMAP). SSRN Electronic Journal. https://doi.org/10.2139/ssrn.3582067
 
-```
+
+
 
 # License and disclaimer
 

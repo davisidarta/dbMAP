@@ -130,12 +130,10 @@ As we prepare for a second version of the manuscript, extensive benchmarking of 
 
 # Citation
 
-We kindly ask that you cite dbMAP and the manuscript that lead to NMSlib if you use these algorithms for your work:
+We kindly ask that you cite dbMAP if you find it useful for your work.
 
 ```
-Sidarta-Oliveira, Davi and Velloso, Licio, Comprehensive Visualization of High-Dimensional Single-Cell Data With Diffusion-Based Manifold Approximation and Projection (dbMAP). CELL-REPORTS-D-20-01731. Available at SSRN: https://ssrn.com/abstract=3582067 or http://dx.doi.org/10.2139/ssrn.3582067
-
-Malkov, Y.A., Yashunin, D.A.. (2016). Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs. CoRR, abs/1603.09320. [BibTex]
+Sidarta-Oliveira, D., & Velloso, L. (2020). Comprehensive Visualization of High-Dimensional Single-Cell Data With&nbsp;Diffusion-Based Manifold Approximation and Projection(dbMAP). SSRN Electronic Journal. https://doi.org/10.2139/ssrn.3582067
 
 ```
 

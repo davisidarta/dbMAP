@@ -1,5 +1,10 @@
 import time
-import umap
+import sys
+try:
+    import umap
+except ImportError:
+    print("The package 'umap-learn' is required. Please install it 'with pip3 install umap-learn'.")
+    sys.exit()
 from sklearn.base import TransformerMixin
 
 class Mapper(TransformerMixin):

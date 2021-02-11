@@ -1,4 +1,9 @@
-import matplotlib.pyplot as plt
+import sys
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("The package 'umap-learn' is required. Please install it 'with pip3 install umap-learn'.")
+    sys.exit()
 
 def scatter_plot(res, title=None, fontsize=18, labels=None, pt_size=None, marker='o', opacity=1):
     plt.scatter(

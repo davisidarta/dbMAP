@@ -56,7 +56,6 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    anbrs.test_efficiency(data)
    ```
 
-
   ## 2 - Fast adaptive multiscaled diffusion maps
   dbMAP implements the Diffusor() class, which allows state-of-the-art dimensional reduction by the fast approximation of the Laplace Beltrami operator and automatic detection of intrinsic dimensionality. This algorithm learns a local metric which is normalized and embedded as a diffusion distance on the series of orthogonal components that define structure variability within the initial informational space.
   Default machine-learning analysis sometimes employs PCA on highly non-linear data despite its caveat of being unsuitable for datasets which cannot be represented as a series of linear correlations. The main reason for this is the low computational cost of PCA compared to non-linear dimensional reduction methods. Our implementation is scalable to extremely high-dimensional datasets (10e9 samples) and oughts to provide more reliable information than PCA on real-world, non-linear data. Similarly to our fast nearest-neighbor implementation, we provide utility functions to obtain results in different formats.
@@ -81,16 +80,6 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    ind, dist, grad, graph = diff.ind_dist_grad(data)
    
  ```
-  A key feature of dbMAP diffusion approach is its ability to indirectly estimate data intrinsic dimensionality by looking for all positive-eigenvalued components. The algorithm tries to find an optimal number of final components for eigendecomposition such as to find an eigengap that maximizes the information each component carries. In other words, we want to compute the minimal number of components needed to find negative-valued components. These can then be visualized as follows:
- 
- ```
- import matplotlib.pyplot as plt
- 
- res = diff.return_dict()
-
- plt.plot(range(0, len(res['EigenValues'])), res['EigenValues'], marker='o')
-```
-
   
   ## 3 - Fast mapping layout:
    
@@ -110,7 +99,8 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    res = dm.diffusion.Diffusor().fit(data).transform(data)
    
    # Embed graph with a fast approximate UMAP layout:
-   emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
+   # TO DO: update fast UMAP layout, parametric UMAP and dbTriMap
+   # emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
    
    plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
    plt.gca().set_aspect('equal', 'datalim')
@@ -128,7 +118,7 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    plt.show()
    
    
-   # TODO: GRAPH_LAYOUT UTILITY
+   # TO DO: GRAPH_LAYOUT UTILITY
    
   ```
  ![dbMAP handwritten digits visualization](https://github.com/davisidarta/dbMAP/blob/master/Digits.png)

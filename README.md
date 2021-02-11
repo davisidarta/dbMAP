@@ -24,6 +24,14 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    You can read more about NMSlib  [here](https://github.com/nmslib/nmslib), and check more on the available distances and spaces documentation [here](https://github.com/nmslib/nmslib/blob/master/manual/spaces.md). dbMAP implements utility functions on NMSlib that make it more genrally extendable to machine-leraning workflows, and we are grateful to the nmslib community for their insights during this process.
    
    dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
+   
+   Please note that if you're using the last version of UMAP (umap-learn), you should install our dev branch, which does not rely a prior UMAP function. This is being currently updated for the next version, but for now, new users need to source the repo. 
+   
+   ```
+   $> git clone -b dev https://github.com/davisidarta/dbMAP
+   $> cd dbMAP
+   #> pip3 install.
+   ```
 
 # Usage - Python
   dbMAP consists of two main steps: an adaptive anisotropic reproduction of the initial input diffusion structure, followed by an accelerated UMAP or graph layout. dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. The adaptive diffusion reduction is recommended over PCA if data is significantly non-linear, and is useful for clustering and downstream analysis. The UMAP and graph layouts are also useful for big data visualization. 

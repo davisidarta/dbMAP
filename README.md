@@ -41,27 +41,27 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
   dbMAP implements the NMSlibTransformer() class, which calls nmslib to perform a fast and accurate approximate nearest neighbor search. The NMSlibTransformer() class has several methods to compute and retrieve this information, and an additional function to measure it's accuracy.
 
    ```
-   # Load some libraries:
-   from sklearn.datasets import load_digits
-   from scipy.sparse import csr_matrix
-   import dbmap as dm
+  # Load some libraries:
+  from sklearn.datasets import load_digits
+  from scipy.sparse import csr_matrix
+  import dbmap as dm
 
-   # Load some data and convert to CSR for speed:
-   digits = load_digits()
-   data = csr_matrix(digits.data)
+  # Load some data and convert to CSR for speed:
+  digits = load_digits()
+  data = csr_matrix(digits.data)
 
-   # Initialize the NMSlibTransformer() object and index the data:
-   anbrs = dm.ann.NMSlibTransformer() # Feel free to play with parameters
-   anbrs = anbrs.fit(data)
+  # Initialize the NMSlibTransformer() object and index the data:
+  anbrs = dm.ann.NMSlibTransformer() # Feel free to play with parameters
+  anbrs = anbrs.fit(data)
 
-   # Compute the knn_neighbors graph:
-   knn_graph = anbrs.transform(data)
+  # Compute the knn_neighbors graph:
+  knn_graph = anbrs.transform(data)
 
-   # Compute indices, distances, gradient and knn_neighbors graph:
-   inds, dists, grad, knn = anbrs.ind_dist_grad(data)
+  # Compute indices, distances, gradient and knn_neighbors graph:
+  inds, dists, grad, knn = anbrs.ind_dist_grad(data)
 
-   # Test approximate-neighbors accuracy:
-   anbrs.test_efficiency(data)
+  # Test approximate-neighbors accuracy:
+  anbrs.test_efficiency(data)
    ```
 
 
@@ -106,38 +106,38 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    For scalable big data visualization, we provide a fast mapping layout of the adaptive multiscale diffusion components space. We adapted UMAP to construct fast approximate simplicial complexes wich normalizes the data structure, rendering a comprehensive layout. We also provide fast graph layout of the resulting components with fa2, which implements scalable and interative layouts within networkx. A vanilla UMAP implementation is also provided.
       
   ```
-   # Load some libraries:
-   from sklearn.datasets import load_digits
-   from scipy.sparse import csr_matrix
-   import dbmap as dm
+  # Load some libraries:
+  from sklearn.datasets import load_digits
+  from scipy.sparse import csr_matrix
+  import dbmap as dm
 
-   # Load some data and convert to CSR for speed:
-   digits = load_digits()
-   data = csr_matrix(digits.data)
+  # Load some data and convert to CSR for speed:
+  digits = load_digits()
+  data = csr_matrix(digits.data)
    
-   # Initialize the diffusor object, fit data and transform:
-   res = dm.diffusion.Diffusor().fit(data).transform(data)
+  # Initialize the diffusor object, fit data and transform:
+  res = dm.diffusion.Diffusor().fit(data).transform(data)
    
-   # Embed graph with a fast approximate UMAP layout:
-   emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
+  # Embed graph with a fast approximate UMAP layout:
+  emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
    
-   plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
-   plt.gca().set_aspect('equal', 'datalim')
-   plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-   plt.title('dbMAP projection of the Digits dataset', fontsize=24)
-   plt.show()
+  plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
+  plt.gca().set_aspect('equal', 'datalim')
+  plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
+  plt.title('dbMAP projection of the Digits dataset', fontsize=24)
+  plt.show()
 
-   # Embed graph with vanilla UMAP:
-   emb = dm.map.UMAP().fit(transform(res.to_numpy(dtype='float32'))
+  # Embed graph with vanilla UMAP:
+  emb = dm.map.UMAP().fit(transform(res.to_numpy(dtype='float32'))
    
-   plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
-   plt.gca().set_aspect('equal', 'datalim')
-   plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-   plt.title('MSDCs on UMAP projection of the Digits dataset', fontsize=24)
-   plt.show()
+  plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
+  plt.gca().set_aspect('equal', 'datalim')
+  plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
+  plt.title('MSDCs on UMAP projection of the Digits dataset', fontsize=24)
+  plt.show()
    
    
-   # TODO: GRAPH_LAYOUT UTILITY
+  # TODO: GRAPH_LAYOUT UTILITY
    
   ```
  ![dbMAP handwritten digits visualization](https://github.com/davisidarta/dbMAP/blob/master/Digits.png)

@@ -24,6 +24,14 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    You can read more about NMSlib  [here](https://github.com/nmslib/nmslib), and check more on the available distances and spaces documentation [here](https://github.com/nmslib/nmslib/blob/master/manual/spaces.md). dbMAP implements utility functions on NMSlib that make it more genrally extendable to machine-leraning workflows, and we are grateful to the nmslib community for their insights during this process.
    
    dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
+   
+   Please note that if you're using the last version of UMAP (umap-learn), you should install our dev branch, which does not rely a prior UMAP function. This is being currently updated for the next version, but for now, new users need to source the repo. 
+   
+   ```
+   $> git clone -b dev https://github.com/davisidarta/dbMAP
+   $> cd dbMAP
+   #> pip3 install.
+   ```
 
 # Usage - Python
   dbMAP consists of two main steps: an adaptive anisotropic reproduction of the initial input diffusion structure, followed by an accelerated UMAP or graph layout. dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. The adaptive diffusion reduction is recommended over PCA if data is significantly non-linear, and is useful for clustering and downstream analysis. The UMAP and graph layouts are also useful for big data visualization. 
@@ -33,27 +41,27 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
   dbMAP implements the NMSlibTransformer() class, which calls nmslib to perform a fast and accurate approximate nearest neighbor search. The NMSlibTransformer() class has several methods to compute and retrieve this information, and an additional function to measure it's accuracy.
 
    ```
-   # Load some libraries:
-   from sklearn.datasets import load_digits
-   from scipy.sparse import csr_matrix
-   import dbmap as dm
+  # Load some libraries:
+  from sklearn.datasets import load_digits
+  from scipy.sparse import csr_matrix
+  import dbmap as dm
 
-   # Load some data and convert to CSR for speed:
-   digits = load_digits()
-   data = csr_matrix(digits.data)
+  # Load some data and convert to CSR for speed:
+  digits = load_digits()
+  data = csr_matrix(digits.data)
 
-   # Initialize the NMSlibTransformer() object and index the data:
-   anbrs = dm.ann.NMSlibTransformer() # Feel free to play with parameters
-   anbrs = anbrs.fit(data)
+  # Initialize the NMSlibTransformer() object and index the data:
+  anbrs = dm.ann.NMSlibTransformer() # Feel free to play with parameters
+  anbrs = anbrs.fit(data)
 
-   # Compute the knn_neighbors graph:
-   knn_graph = anbrs.transform(data)
+  # Compute the knn_neighbors graph:
+  knn_graph = anbrs.transform(data)
 
-   # Compute indices, distances, gradient and knn_neighbors graph:
-   inds, dists, grad, knn = anbrs.ind_dist_grad(data)
+  # Compute indices, distances, gradient and knn_neighbors graph:
+  inds, dists, grad, knn = anbrs.ind_dist_grad(data)
 
-   # Test approximate-neighbors accuracy:
-   anbrs.test_efficiency(data)
+  # Test approximate-neighbors accuracy:
+  anbrs.test_efficiency(data)
    ```
 
   ## 2 - Fast adaptive multiscaled diffusion maps
@@ -61,64 +69,87 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
   Default machine-learning analysis sometimes employs PCA on highly non-linear data despite its caveat of being unsuitable for datasets which cannot be represented as a series of linear correlations. The main reason for this is the low computational cost of PCA compared to non-linear dimensional reduction methods. Our implementation is scalable to extremely high-dimensional datasets (10e9 samples) and oughts to provide more reliable information than PCA on real-world, non-linear data. Similarly to our fast nearest-neighbor implementation, we provide utility functions to obtain results in different formats.
   
   ```
-   # Load some libraries:
-   from sklearn.datasets import load_digits
-   from scipy.sparse import csr_matrix
-   import dbmap as dm
+  # Load some libraries:
+  from sklearn.datasets import load_digits
+  from scipy.sparse import csr_matrix
+  import dbmap as dm
 
-   # Load some data and convert to CSR for speed:
-   digits = load_digits()
-   data = csr_matrix(digits.data)
+  # Load some data and convert to CSR for speed:
+  digits = load_digits()
+  data = csr_matrix(digits.data)
    
-   # Initialize the diffusor object and fit data:
-   diff = dm.diffusion.Diffusor().fit(data)
+  # Initialize the diffusor object and fit data:
+  diff = dm.diffusion.Diffusor().fit(data)
    
-   # Return low dimensional representation of data:
-   res = diff.transform(data)
+  # Return low dimensional representation of data:
+  res = diff.transform(data)
    
-   # Return the diffusion indices, distances, diffusion gradient and diffusion graph:
-   ind, dist, grad, graph = diff.ind_dist_grad(data)
+  # Return the diffusion indices, distances, diffusion gradient and diffusion graph:
+  ind, dist, grad, graph = diff.ind_dist_grad(data)
    
  ```
+<<<<<<< HEAD
+=======
+  A key feature of dbMAP diffusion approach is its ability to indirectly estimate data intrinsic dimensionality by looking for all positive-eigenvalued components. The algorithm tries to find an optimal number of final components for eigendecomposition such as to find an eigengap that maximizes the information each component carries. In other words, we want to compute the minimal number of components needed to find negative-valued components. These can then be visualized as follows:
+ 
+ ```
+ import matplotlib.pyplot as plt
+ 
+ res = diff.return_dict()
+
+ plt.plot(range(0, len(res['EigenValues'])), res['EigenValues'], marker='o')
+```
+ ![Digits Eigenvalues](https://github.com/davisidarta/dbMAP/blob/master/Digits_Eigenvalues.png)
+
+>>>>>>> 2a6778b2ceb470eec64ef6e74491e6fc61d0bc5e
   
   ## 3 - Fast mapping layout:
    
    For scalable big data visualization, we provide a fast mapping layout of the adaptive multiscale diffusion components space. We adapted UMAP to construct fast approximate simplicial complexes wich normalizes the data structure, rendering a comprehensive layout. We also provide fast graph layout of the resulting components with fa2, which implements scalable and interative layouts within networkx. A vanilla UMAP implementation is also provided.
       
   ```
-   # Load some libraries:
-   from sklearn.datasets import load_digits
-   from scipy.sparse import csr_matrix
-   import dbmap as dm
+  # Load some libraries:
+  from sklearn.datasets import load_digits
+  from scipy.sparse import csr_matrix
+  import dbmap as dm
 
-   # Load some data and convert to CSR for speed:
-   digits = load_digits()
-   data = csr_matrix(digits.data)
+  # Load some data and convert to CSR for speed:
+  digits = load_digits()
+  data = csr_matrix(digits.data)
    
-   # Initialize the diffusor object, fit data and transform:
-   res = dm.diffusion.Diffusor().fit(data).transform(data)
+  # Initialize the diffusor object, fit data and transform:
+  res = dm.diffusion.Diffusor().fit(data).transform(data)
    
+<<<<<<< HEAD
    # Embed graph with a fast approximate UMAP layout:
    # TO DO: update fast UMAP layout, parametric UMAP and dbTriMap
    # emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
+=======
+  # Embed graph with a fast approximate UMAP layout:
+  emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
+>>>>>>> 2a6778b2ceb470eec64ef6e74491e6fc61d0bc5e
    
-   plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
-   plt.gca().set_aspect('equal', 'datalim')
-   plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-   plt.title('dbMAP projection of the Digits dataset', fontsize=24)
-   plt.show()
+  plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
+  plt.gca().set_aspect('equal', 'datalim')
+  plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
+  plt.title('dbMAP projection of the Digits dataset', fontsize=24)
+  plt.show()
 
-   # Embed graph with vanilla UMAP:
-   emb = dm.map.UMAP().fit(transform(res.to_numpy(dtype='float32'))
+  # Embed graph with vanilla UMAP:
+  emb = dm.map.UMAP().fit(transform(res.to_numpy(dtype='float32'))
    
-   plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
-   plt.gca().set_aspect('equal', 'datalim')
-   plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-   plt.title('MSDCs on UMAP projection of the Digits dataset', fontsize=24)
-   plt.show()
+  plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
+  plt.gca().set_aspect('equal', 'datalim')
+  plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
+  plt.title('MSDCs on UMAP projection of the Digits dataset', fontsize=24)
+  plt.show()
    
    
+<<<<<<< HEAD
    # TO DO: GRAPH_LAYOUT UTILITY
+=======
+  # TODO: GRAPH_LAYOUT UTILITY
+>>>>>>> 2a6778b2ceb470eec64ef6e74491e6fc61d0bc5e
    
   ```
  ![dbMAP handwritten digits visualization](https://github.com/davisidarta/dbMAP/blob/master/Digits.png)

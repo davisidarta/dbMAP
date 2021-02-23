@@ -98,6 +98,7 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
 
  plt.plot(range(0, len(res['EigenValues'])), res['EigenValues'], marker='o')
 ```
+ ![Digits Eigenvalues](https://github.com/davisidarta/dbMAP/blob/master/Digits_Eigenvalues.png)
 
   
   ## 3 - Fast mapping layout:

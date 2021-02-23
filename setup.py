@@ -17,13 +17,12 @@ setup(name='dbmap',
           'numpy>=1.14.2',
           'pandas>=0.22.0',
           'scipy>=1.0.1',
-          'networkx>=2.1',
           'scikit-learn',
           'joblib',
-          'umap-learn',
           'fcsparser>=0.1.2',
           'tables>=3.4.2',
-          'nmslib'
+          'nmslib',
+          'numba'
       ],
       python_requires=">=3",
       )

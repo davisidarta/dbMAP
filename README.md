@@ -21,7 +21,7 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
    ```
     $> pip3 install nmslib
    ```
-   You can read more about NMSlib  [here](https://github.com/nmslib/nmslib), and check more on the available distances and spaces documentation [here](https://github.com/nmslib/nmslib/blob/master/manual/spaces.md). dbMAP implements utility functions on NMSlib that make it more genrally extendable to machine-leraning workflows, and we are grateful to the nmslib community for their insights during this process.
+   You can read more about NMSlib  [here](https://github.com/nmslib/nmslib), and check more on the available distances and spaces documentation [here](https://github.com/nmslib/nmslib/blob/master/manual/spaces.md). dbMAP implements functions derived from scikit-learn base transformers tat make NMSlib more generally extendable to machine-leraning workflows, and we are grateful to the nmslib community for their insights during this process.
    
    dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
    

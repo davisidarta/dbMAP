@@ -138,7 +138,9 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
     def fit(self, data):
         # see more metrics in the manual
         # https://github.com/nmslib/nmslib/tree/master/manual
-
+        if self.metric == 'lp' and self.p < 1:
+            print('Fractional L norms are slower to compute. Computations are faster for fractions'
+                  ' of the form \'1/2ek\', where k is a small integer (i.g. 0.5, 0.25) ')
         if self.dense:
             self.nmslib_ = nmslib.init(method=self.method,
                                        space=self.space,
@@ -215,7 +217,6 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         start = time.time()
         self.nmslib_.createIndex(index_time_params)
         end = time.time()
-
         if self.verbose:
             print('Index-time parameters', 'M:', self.M, 'n_threads:', self.n_jobs, 'efConstruction:', self.efC,
                   'post:0')

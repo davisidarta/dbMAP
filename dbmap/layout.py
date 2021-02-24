@@ -10,6 +10,7 @@ AnyRandom = Union[None, int, random.RandomState]  # maybe in the future random.G
 #from .. import _utils
 #from .. import logging as logg
 #from .utils import get_init_pos_from_paga
+from . import graph_utils
 from .graph_utils import compute_connectivities_adapmap
 from .spectral import spectral_layout
 
@@ -152,7 +153,7 @@ class force_directed_layout(TransformerMixin):
             try:
                 from fa2 import ForceAtlas2
             except ImportError:
-                logg.warning(
+                print(
                     "Package 'fa2' is not installed, falling back to layout 'lgl'."
                     "To use the faster and better ForceAtlas2 layout, "
                     "install package 'fa2' (`pip install fa2`)."

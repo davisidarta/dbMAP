@@ -23,36 +23,50 @@ class Diffusor(TransformerMixin):
     """
     Sklearn estimator for using fast anisotropic diffusion with an anisotropic
     adaptive algorithm as proposed by Setty et al, 2018, and optimized by Sidarta-Oliveira, 2020.
+
     Parameters
     ----------
     n_components : Number of diffusion components to compute. Defaults to 100. We suggest larger values if
                    analyzing more than 10,000 cells.
+
     n_neighbors : Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
                   distance of its median neighbor.
+
     knn_dist : Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
                different metrics, such as 'cosine' and 'jaccard'. The 'hamming' and 'jaccard' distances are also available
                for string vectors.
+
     ann : Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
+
     alpha : Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
             Defaults to 1, which is suitable for normalized data.
+
     n_jobs : Number of threads to use in calculations. Defaults to all but one.
+
     verbose : controls verbosity.
+
+
     Returns
     -------------
         Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
         resulting components to use during Multiscaling.
+
     Example
     -------------
+
     import numpy as np
     from sklearn.datasets import load_digits
     from scipy.sparse import csr_matrix
     import dbmap
+
     # Load the MNIST digits data, convert to sparse for speed
     digits = load_digits()
     data = csr_matrix(digits)
+
     # Fit the anisotropic diffusion process
     diff = dbmap.diffusion.Diffusor()
     res = diff.fit_transform(data)
+
     """
 
     def __init__(self,
@@ -67,8 +81,8 @@ class Diffusor(TransformerMixin):
                  efC=100,
                  efS=100,
                  knn_dist='cosine',
-                 kernel_use='decay_adaptive',
-                 transitions=False,
+                 kernel_use='decay',
+                 transitions=True,
                  eigengap=True,
                  norm=False,
                  verbose=True
@@ -103,11 +117,8 @@ class Diffusor(TransformerMixin):
             print('The original kernel implementation used transitions computation. Set `transitions` to `True`'
                   'for similar results.')
         if self.kernel_use not in ['simple', 'simple_adaptive', 'decay', 'decay_adaptive']:
-            raise Exception('Kernel must be either \'simple\', \'simple_adaptive\', \'decay\' or \'decay_adaptive\'.')
+            raise Exception('Kernel must be either \'simple\', \'simple_adaptive\', \'decay\' or \'decay_adaptive\'.') 
         if self.ann:
-            if self.ann_dist == 'lp' and self.p < 1:
-                print('Fractional L norms are slower to compute. Computations are faster for fractions'
-                      ' of the form \'1/2ek\', where k is a small integer (i.g. 0.5, 0.25) ')
             # Construct an approximate k-nearest-neighbors graph
             anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
                                           metric=self.ann_dist,
@@ -151,44 +162,26 @@ class Diffusor(TransformerMixin):
 
         # adaptive neighborhood size
         if self.kernel_use == 'simple_adaptive' or self.kernel_use == 'decay_adaptive':
-            if self.ann:
-                # increase neighbor search:
-                print(pm.max())
-                new_n_neighbors = int(self.n_neighbors + pm.max())
-                print('Expanding search to k=' + str(new_n_neighbors) + ' neighbors.')
-                anbrs_new = ann.NMSlibTransformer(n_neighbors=new_n_neighbors,
-                                                  metric=self.ann_dist,
-                                                  method='hnsw',
-                                                  n_jobs=self.n_jobs,
-                                                  p=self.p,
-                                                  M=self.M,
-                                                  efC=self.efC,
-                                                  efS=self.efS).fit(data)
-                knn_new = anbrs_new.transform(data)
+            # increase neighbor search:
+            anbrs_new = ann.NMSlibTransformer(n_neighbors=int(self.n_neighbors + (self.n_neighbors - pm.max())),
+                                              metric=self.ann_dist,
+                                              method='hnsw',
+                                              n_jobs=self.n_jobs,
+                                              p=self.p,
+                                              M=self.M,
+                                              efC=self.efC,
+                                              efS=self.efS).fit(data)
+            knn_new = anbrs_new.transform(data)
 
-                x_new, y_new, dists_new = find(knn_new)
+            x_new, y_new, dists_new = find(knn_new)
 
-                # adaptive neighborhood size
-                adap_nbr = np.zeros(self.N)
-                for i in np.arange(len(adap_nbr)):
-                    adap_nbr[i] = np.sort(knn_new.data[knn_new.indptr[i]: knn_new.indptr[i + 1]])[
-                        int(np.floor(pm[i]) - 1)
-                    ]
-            else:
-                # increase neighbor search:
-                nbrs_new = NearestNeighbors(n_neighbors=int(self.n_neighbors + (self.n_neighbors - pm.max())),
-                                            metric=self.knn_dist,
-                                            n_jobs=self.n_jobs).fit(data)
-                knn_new = nbrs_new.kneighbors_graph(data, mode='distance')
-                x_new, y_new, dists_new = find(knn_new)
-
-                # X, y specific stds: Normalize by the distance of median nearest neighbor to account for neighborhood size.
-                adap_nbr = np.zeros(self.N)
-                for i in np.arange(len(adap_sd)):
-                    adap_sd[i] = np.sort(knn_new.data[knn_new.indptr[i]: knn_new.indptr[i + 1]])[
-                        median_k - 1
-                        ]
-
+            # adaptive neighborhood size
+            adap_nbr = np.zeros(self.N)
+            for i in np.arange(len(adap_nbr)):
+                adap_k = int(np.floor(pm[i]))
+                adap_nbr[i] = np.sort(knn_new.data[knn_new.indptr[i]: knn_new.indptr[i + 1]])[
+                    adap_k - 1
+                ]
 
         if self.kernel_use == 'simple':
             # X, y specific stds
@@ -242,6 +235,7 @@ class Diffusor(TransformerMixin):
 
         # Fit an optimal number of components based on the eigengap
         # Use user's  or default initial guess
+        multiplier = self.N // 10e4
         # initial eigen value decomposition
         if self.transitions:
             D, V = eigs(self.T, self.n_components, tol=1e-4, maxiter=self.N)
@@ -258,33 +252,28 @@ class Diffusor(TransformerMixin):
         vals = np.array(V)
         pos = np.sum(vals > 0, axis=0)
         residual = np.sum(vals < 0, axis=0)
-        multiplier = self.n_components / len(pos)
-
 
         if self.eigengap and len(residual) < 1:
             #expand eigendecomposition
             target = self.n_components * multiplier
-            while len(residual) < 3:
-                if target < int(data.shape[1] // 3):
-                    print('Eigengap not found for determined number of components. Expanding eigendecomposition to '
-                          + str(target) + 'components...')
-                    if self.transitions:
-                        D, V = eigs(self.T, target, tol=1e-4, maxiter=self.N)
-                    else:
-                        D, V = eigs(self.K, target, tol=1e-4, maxiter=self.N)
-                    D = np.real(D)
-                    V = np.real(V)
-                    inds = np.argsort(D)[::-1]
-                    D = D[inds]
-                    V = V[:, inds]
-                    # Normalize by the first diffusion component
-                    for i in range(V.shape[1]):
-                        V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
-                    vals = np.array(V)
-                    residual = np.sum(vals < 0, axis=0)
-                    target = target * 2
+            while residual < 3:
+                print('Eigengap not found for determined number of components. Expanding eigendecomposition to '
+                      + str(target) + 'components.')
+                if self.transitions:
+                    D, V = eigs(self.T, target, tol=1e-4, maxiter=self.N)
                 else:
-                    print('WARNING: Eigengap not found!')
+                    D, V = eigs(self.K, target, tol=1e-4, maxiter=self.N)
+                D = np.real(D)
+                V = np.real(V)
+                inds = np.argsort(D)[::-1]
+                D = D[inds]
+                V = V[:, inds]
+                # Normalize by the first diffusion component
+                for i in range(V.shape[1]):
+                    V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
+                vals = np.array(V)
+                residual = np.sum(vals < 0, axis=0)
+                target = target * 2
 
         if len(residual) > 30:
             self.n_components = len(pos) + 15
@@ -401,8 +390,6 @@ class Diffusor(TransformerMixin):
         mms = multiscale.multiscale(self.res)
         self.res['StructureComponents'] = mms
 
-        mms = csr_matrix(mms)
-
         anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
                                   metric='cosine',
                                   method='hnsw',
@@ -410,7 +397,7 @@ class Diffusor(TransformerMixin):
                                   M=self.M,
                                   efC=self.efC,
                                   efS=self.efS,
-                                  dense=False,
+                                  dense=True,
                                   verbose=self.verbose
                                       ).fit(mms)
 

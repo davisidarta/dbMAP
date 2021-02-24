@@ -14,15 +14,17 @@ def component_layout(
     component_labels,
     dim,
     random_state,
-    linkage="average"
+    metric="euclidean",
+    metric_kwds={},
 ):
     """Provide a layout relating the separate connected components. This is done
     by taking the centroid of each component and then performing a spectral embedding
     of the centroids.
     Parameters
     ----------
-    data: array of shape (n_samples, n_samples)
-        Distance or similarity matrix.
+    data: array of shape (n_samples, n_features)
+        The source data -- required so we can generate centroids for each
+        connected component of the graph.
     n_components: int
         The number of distinct components to be layed out.
     component_labels: array of shape (n_samples)
@@ -30,9 +32,12 @@ def component_layout(
         which the vertex belongs.
     dim: int
         The chosen embedding dimension.
-   linkage:
-        Specify component linkage. Can be 'average','complete', or 'single' linkage.
-        Default is 'average'.
+    metric: string or callable (optional, default 'euclidean')
+        The metric used to measure distances among the source data points.
+    metric_kwds: dict (optional, default {})
+        Keyword arguments to be passed to the metric function.
+        If metric is 'precomputed', 'linkage' keyword can be used to specify
+        'average', 'complete', or 'single' linkage. Default is 'average'
     Returns
     -------
     component_embedding: array of shape (n_components, dim)
@@ -42,25 +47,69 @@ def component_layout(
 
     component_centroids = np.empty((n_components, data.shape[1]), dtype=np.float64)
 
-    # compute centroid distances using linkage
-    distance_matrix = np.zeros((n_components, n_components), dtype=np.float64)
-    if linkage == "average":
-        linkage = np.mean
-    elif linkage == "complete":
-        linkage = np.max
-    elif linkage == "single":
-        linkage = np.min
+    if metric == "precomputed":
+        # cannot compute centroids from precomputed distances
+        # instead, compute centroid distances using linkage
+        distance_matrix = np.zeros((n_components, n_components), dtype=np.float64)
+        linkage = metric_kwds.get("linkage", "average")
+        if linkage == "average":
+            linkage = np.mean
+        elif linkage == "complete":
+            linkage = np.max
+        elif linkage == "single":
+            linkage = np.min
+        else:
+            raise ValueError(
+                "Unrecognized linkage '%s'. Please choose from "
+                "'average', 'complete', or 'single'" % linkage
+            )
+        for c_i in range(n_components):
+            dm_i = data[component_labels == c_i]
+            for c_j in range(c_i + 1, n_components):
+                dist = linkage(dm_i[:, component_labels == c_j])
+                distance_matrix[c_i, c_j] = dist
+                distance_matrix[c_j, c_i] = dist
     else:
-        raise ValueError(
-            "Unrecognized linkage '%s'. Please choose from "
-            "'average', 'complete', or 'single'" % linkage
-        )
-    for c_i in range(n_components):
-        dm_i = data[component_labels == c_i]
-        for c_j in range(c_i + 1, n_components):
-            dist = linkage(dm_i[:, component_labels == c_j])
-            distance_matrix[c_i, c_j] = dist
-            distance_matrix[c_j, c_i] = dist
+        for label in range(n_components):
+            component_centroids[label] = data[component_labels == label].mean(axis=0)
+
+        if scipy.sparse.isspmatrix(component_centroids):
+            warn(
+                "Forcing component centroids to dense; if you are running out of "
+                "memory then consider increasing n_neighbors."
+            )
+            component_centroids = component_centroids.toarray()
+
+        if metric in SPECIAL_METRICS:
+            distance_matrix = pairwise_special_metric(
+                component_centroids, metric=metric
+            )
+        elif metric in SPARSE_SPECIAL_METRICS:
+            distance_matrix = pairwise_special_metric(
+                component_centroids, metric=SPARSE_SPECIAL_METRICS[metric]
+            )
+        else:
+            if callable(
+                metric
+            ) and scipy.sparse.isspmatrix(data):
+                function_to_name_mapping = {
+                    v: k for k, v in sparse_named_distances.items()
+                }
+                try:
+                    metric_name = function_to_name_mapping[metric]
+                except KeyError:
+                    raise NotImplementedError(
+                        "Multicomponent layout for custom "
+                        "sparse metrics is not implemented at "
+                        "this time."
+                    )
+                distance_matrix = pairwise_distances(
+                    component_centroids, metric=metric_name, **metric_kwds
+                )
+            else:
+                distance_matrix = pairwise_distances(
+                    component_centroids, metric=metric, **metric_kwds
+                )
 
     affinity_matrix = np.exp(-(distance_matrix ** 2))
 
@@ -71,12 +120,14 @@ def component_layout(
 
     return component_embedding
 
+
 def multi_component_layout(
     data,
     graph,
     n_components,
     component_labels,
     dim,
+    random_state,
     metric="euclidean",
     metric_kwds={},
 ):
@@ -117,7 +168,9 @@ def multi_component_layout(
             n_components,
             component_labels,
             dim,
-            random_state
+            random_state,
+            metric=metric,
+            metric_kwds=metric_kwds,
         )
     else:
         k = int(np.ceil(n_components / 2.0))

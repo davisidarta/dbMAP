@@ -7,17 +7,27 @@ import numpy as np
 from scipy.sparse import coo_matrix, issparse
 from scipy.optimize import curve_fit
 
-from .utils import (
-    submatrix,
-    ts,
-    csr_unique,
-    fast_knn_indices,
-)
-from .umap_layouts import (
-    optimize_layout_euclidean,
-    optimize_layout_generic,
-    optimize_layout_inverse,
-)
+# from .utils import (
+#     ts,
+#     csr_unique,
+#     fast_knn_indices,
+# )
+
+from . import utils
+ts = utils.ts
+csr_unique = utils.csr_unique
+fast_knn_indices = utils.fast_knn_indices
+
+from . import umap_layouts
+optimize_layout_euclidean = umap_layouts.optimize_layout_euclidean
+optimize_layout_generic = umap_layouts.optimize_layout_generic
+optimize_layout_inverse = umap_layouts.optimize_layout_inverse
+
+# from .umap_layouts import (
+#     optimize_layout_euclidean,
+#     optimize_layout_generic,
+#     optimize_layout_inverse,
+# )
 from . import diffusion
 from . import ann
 from . import multiscale

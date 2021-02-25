@@ -1,9 +1,9 @@
-annoy
-joblib
-nmslib
-numba
 numpy>=1.14.2
 pandas>=0.22.0
-scikit-learn
 scipy>=1.0.1
+scikit-learn
+joblib
 tables>=3.4.2
+nmslib
+annoy
+numba

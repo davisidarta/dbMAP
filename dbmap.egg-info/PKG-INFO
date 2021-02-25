@@ -1,10 +1,10 @@
 Metadata-Version: 2.1
 Name: dbmap
-Version: 1.1.4
+Version: 1.2
 Summary: dbMAP - fast, accurate and generalized dimensional reduction for explorative data analysis
 Home-page: https://github.com/davisidarta/dbMAP
 Author: Davi Sidarta-Oliveira
-Author-email: davisidarta@gmail.com
+Author-email: davisidarta@fcm.unicamp.br
 License: GNU General Public License v3.0
 Download-URL: https://github.com/davisidarta/dbMAP/archive/1.1.1.tar.gz
 Description: [![Latest PyPI version](https://img.shields.io/pypi/v/dbmap.svg)](https://pypi.org/project/dbmap/)
@@ -172,7 +172,7 @@ Description: [![Latest PyPI version](https://img.shields.io/pypi/v/dbmap.svg)](h
         
         You should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/.
         
-Keywords: Dimensionality Reduction,Big Data,Diffusion Maps,Nearest-neighbors
+Keywords: visualization,machine-learning,dimensionality-reduction,topological-data-analysis,knowledge-representation,single-cell
 Platform: UNKNOWN
 Requires-Python: >=3
 Description-Content-Type: text/markdown

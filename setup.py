@@ -8,7 +8,7 @@ if __name__ == "__main__":
 from dbmap.version import __version__
 
 
-setup(name='dbmap',
+setuptools.setup(name='dbmap',
       version=__version__,
       packages=setuptools.find_packages(),
       description='dbMAP - fast, accurate and generalized dimensional reduction for explorative data analysis',

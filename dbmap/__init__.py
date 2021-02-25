@@ -8,5 +8,5 @@ from . import spectral
 from . import layout
 from . import pacmapper
 from . import umap_layouts
-from . import amap
+from . import map
 from .version import __version__

@@ -17,6 +17,10 @@ setup.py
 .idea/dictionaries/davi.xml
 .idea/inspectionProfiles/Project_Default.xml
 .idea/inspectionProfiles/profiles_settings.xml
+UNKNOWN.egg-info/PKG-INFO
+UNKNOWN.egg-info/SOURCES.txt
+UNKNOWN.egg-info/dependency_links.txt
+UNKNOWN.egg-info/top_level.txt
 dbmap/__init__.py
 dbmap/ann.py
 dbmap/diffusion.py

@@ -1,16 +1,9 @@
-#!/usr/bin/env python
-
-import setuptools
-
-if __name__ == "__main__":
-    setuptools.setup()
-
+from setuptools import find_packages, setup
 from dbmap.version import __version__
 
-
-setuptools.setup(name='dbmap',
+setup(name='dbmap',
       version=__version__,
-      packages=setuptools.find_packages(),
+      packages=find_packages(),
       description='dbMAP - fast, accurate and generalized dimensional reduction for explorative data analysis',
       long_description=open("README.md").read(),
       long_description_content_type="text/markdown",

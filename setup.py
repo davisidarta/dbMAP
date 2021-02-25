@@ -4,7 +4,7 @@ import setuptools
 
 if __name__ == "__main__":
     setuptools.setup()
-    
+
 from dbmap.version import __version__
 
 setup(name='dbmap',

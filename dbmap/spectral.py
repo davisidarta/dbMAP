@@ -1,25 +1,24 @@
 from warnings import warn
-
 import numpy as np
-
+from . import ann
 import scipy.sparse
 import scipy.sparse.csgraph
-
 from sklearn.manifold import SpectralEmbedding
-from sklearn.metrics import pairwise_distances
 
 def component_layout(
     data,
     n_components,
+    flavor,
     component_labels,
     dim,
     random_state,
-    metric="euclidean",
-    metric_kwds={},
+    nn_method='nmslib',
+    metric="cosine",
+    metric_kwds={}
 ):
     """Provide a layout relating the separate connected components. This is done
     by taking the centroid of each component and then performing a spectral embedding
-    of the centroids.
+    of the centroids. Derived from UMAP initialization.
     Parameters
     ----------
     data: array of shape (n_samples, n_features)
@@ -27,13 +26,23 @@ def component_layout(
         connected component of the graph.
     n_components: int
         The number of distinct components to be layed out.
+    flavor: str (optional, default 'adaptive')
+        Which method to use to build the similarity matrix. If 'kernel', builds
+        an adaptive diffusion kernel connectivity matrix. If 'transitions', uses the
+        adaptive transition probabilities as an affinity metric. Both methods take the settings
+        `kernel_use` and 'norm' to customize the kernel adaptability level.
+        If 'uniform', simply takes exponential pairwise euclidean distances of the data matrix,
+        as in the original UMAP implementation, and the `kernel_use` and `norm` parameters are
+        set to `None`.
     component_labels: array of shape (n_samples)
         For each vertex in the graph the label of the component to
         which the vertex belongs.
     dim: int
         The chosen embedding dimension.
-    metric: string or callable (optional, default 'euclidean')
+    metric: string or callable (optional, default 'cosine')
         The metric used to measure distances among the source data points.
+    p: float (optional, default None)
+        The p norm to be used when using '
     metric_kwds: dict (optional, default {})
         Keyword arguments to be passed to the metric function.
         If metric is 'precomputed', 'linkage' keyword can be used to specify
@@ -69,49 +78,26 @@ def component_layout(
                 dist = linkage(dm_i[:, component_labels == c_j])
                 distance_matrix[c_i, c_j] = dist
                 distance_matrix[c_j, c_i] = dist
+
     else:
-        for label in range(n_components):
-            component_centroids[label] = data[component_labels == label].mean(axis=0)
+        anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
+                                      metric=self.ann_dist,
+                                      p=self.p,
+                                      method='hnsw',
+                                      n_jobs=self.n_jobs,
+                                      M=self.M,
+                                      efC=self.efC,
+                                      efS=self.efS,
+                                      verbose=self.verbose).fit(data)
+        knn = anbrs.transform(data)
 
-        if scipy.sparse.isspmatrix(component_centroids):
-            warn(
-                "Forcing component centroids to dense; if you are running out of "
-                "memory then consider increasing n_neighbors."
-            )
-            component_centroids = component_centroids.toarray()
+    if flavor == 'uniform':
+        affinity_matrix = np.exp(-(distance_matrix ** 2))
 
-        if metric in SPECIAL_METRICS:
-            distance_matrix = pairwise_special_metric(
-                component_centroids, metric=metric
-            )
-        elif metric in SPARSE_SPECIAL_METRICS:
-            distance_matrix = pairwise_special_metric(
-                component_centroids, metric=SPARSE_SPECIAL_METRICS[metric]
-            )
-        else:
-            if callable(
-                metric
-            ) and scipy.sparse.isspmatrix(data):
-                function_to_name_mapping = {
-                    v: k for k, v in sparse_named_distances.items()
-                }
-                try:
-                    metric_name = function_to_name_mapping[metric]
-                except KeyError:
-                    raise NotImplementedError(
-                        "Multicomponent layout for custom "
-                        "sparse metrics is not implemented at "
-                        "this time."
-                    )
-                distance_matrix = pairwise_distances(
-                    component_centroids, metric=metric_name, **metric_kwds
-                )
-            else:
-                distance_matrix = pairwise_distances(
-                    component_centroids, metric=metric, **metric_kwds
-                )
+    if flavor == 'adaptive':
+        affinity_matrix = np.exp(-(distance_matrix ** 2))
 
-    affinity_matrix = np.exp(-(distance_matrix ** 2))
+
 
     component_embedding = SpectralEmbedding(
         n_components=dim, affinity="precomputed", random_state=random_state
@@ -121,15 +107,15 @@ def component_layout(
     return component_embedding
 
 
-def multi_component_layout(
-    data,
-    graph,
+def multi_component_layout(data,
     n_components,
+    flavor,
     component_labels,
     dim,
     random_state,
-    metric="euclidean",
-    metric_kwds={},
+    nn_method='nmslib',
+    metric="cosine",
+    metric_kwds={}
 ):
     """Specialised layout algorithm for dealing with graphs with many connected components.
     This will first fid relative positions for the components by spectrally embedding

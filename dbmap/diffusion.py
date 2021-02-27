@@ -2,6 +2,7 @@
 # Author: Davi Sidarta-Oliveira
 # School of Medical Sciences,University of Campinas,Brazil
 # contact: davisidarta@fcm.unicamp.com
+# License: GNU GLP-v2
 ######################################
 import time
 import numpy as np
@@ -186,22 +187,22 @@ class Diffusor(TransformerMixin):
         if self.kernel_use == 'simple':
             # X, y specific stds
             dists = dists / (adap_sd[x] + 1e-10)  # Normalize by the distance of median nearest neighbor
-            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])
 
         if self.kernel_use == 'simple_adaptive':
             # X, y specific stds
             dists = dists_new / (adap_nbr[x_new] + 1e-10)  # Normalize by normalized contribution to neighborhood size.
-            W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])  # Normalized distances
+            W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])
 
         if self.kernel_use == 'decay':
             # X, y specific stds
             dists = (dists / (adap_sd[x] + 1e-10)) ** np.power(2, ((self.n_neighbors - pm[x]) / pm[x]))
-            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])  # Normalized distances
+            W = csr_matrix((np.exp(-dists), (x, y)), shape=[self.N, self.N])
 
         if self.kernel_use == 'decay_adaptive':
             # X, y specific stds
             dists = (dists_new / (adap_nbr[x_new]+ 1e-10)) ** np.power(2, (((int(self.n_neighbors + (self.n_neighbors - pm.max()))) - pm[x_new]) / pm[x_new]))  # Normalize by normalized contribution to neighborhood size.
-            W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])  # Normalized distances
+            W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])
 
         # Kernel construction
         kernel = W + W.T

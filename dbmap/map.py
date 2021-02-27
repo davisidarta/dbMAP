@@ -27,31 +27,30 @@ except ImportError:
 from .graph_utils import simplicial_set_embedding, find_ab_params
 
 
-def amap(data,
-         graph,
-         n_components,
-         initial_alpha,
-         min_dist,
-         spread,
-         n_epochs,
-         metric,
-         metric_kwds,
-         densmap,
-         densmap_kwds,
-         output_dens,
-         output_metric,
-         output_metric_kwds,
-         gamma,
-         negative_sample_rate,
-         init,
-         random_state,
-         euclidean_output,
-         parallel,
-         njobs,
-         verbose,
-         a,
-         b,
-         ):
+def fuzzy_embedding(graph,
+                    n_components=2,
+                    initial_alpha=1,
+                    min_dist=0.6,
+                    spread=1.2,
+                    n_epochs=500,
+                    metric='cosine',
+                    metric_kwds=None,
+                    output_metric='euclidean',
+                    output_metric_kwds=None,
+                    gamma=1,
+                    negative_sample_rate=5,
+                    init='diffuse_spectral',
+                    random_state=None,
+                    euclidean_output=True,
+                    parallel=True,
+                    njobs=-1,
+                    verbose=False,
+                    a=None,
+                    b=None,
+                    densmap=False,
+                    densmap_kwds=None,
+                    output_dens=False
+                    ):
     """\
     Perform a fuzzy simplicial set embedding, using a specified
     initialisation method and then minimizing the fuzzy set cross entropy
@@ -131,6 +130,12 @@ def amap(data,
         is turned on, this dictionary includes local radii in the original
         data (``rad_orig``) and in the embedding (``rad_emb``).
     """
+    if metric_kwds is None:
+        _metric_kwds = {}
+    else:
+        _metric_kwds = metric_kwds
+    if output_metric_kwds is None:
+        _output_metric_kwds = {}
 
     # Compat for umap 0.4 -> 0.5
     if a is None or b is None:
@@ -139,7 +144,7 @@ def amap(data,
         a = a
         b = b
         # the data matrix X is really only used for determining the number of connected components
-        # for the init condition in the UMAP embedding
+        # for the init condition in the UMAP embedding (high-resolution spectral layout)
     start_time = time.time()
     X_map = simplicial_set_embedding(data,
                                       graph,

@@ -738,7 +738,6 @@ def simplicial_set_embedding(
         # We add a little noise to avoid local minima for optimization to come
         initialisation = spectral.spectral_layout(
             data,
-            flavor,
             graph,
             n_components,
             random_state,

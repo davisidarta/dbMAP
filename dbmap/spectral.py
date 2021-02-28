@@ -1,58 +1,47 @@
 from warnings import warn
+
 import numpy as np
-from . import ann
-from . import diffusion
+
 import scipy.sparse
 import scipy.sparse.csgraph
+
 from sklearn.manifold import SpectralEmbedding
 from sklearn.metrics import pairwise_distances
+
+from umap.distances import pairwise_special_metric, SPECIAL_METRICS
+from umap.sparse import SPARSE_SPECIAL_METRICS, sparse_named_distances
+
 
 def component_layout(
     data,
     n_components,
-    flavor,
+    component_labels,
     dim,
     random_state,
-    metric="cosine",
-    p=None,
-    precomputed=False,
+    metric="euclidean",
+    metric_kwds={},
 ):
     """Provide a layout relating the separate connected components. This is done
     by taking the centroid of each component and then performing a spectral embedding
-    of the centroids. Derived from UMAP initialization.
+    of the centroids.
     Parameters
     ----------
-    data: array of shape (n_samples, n_samples)
-        Distance matrix from data.
+    data: array of shape (n_samples, n_features)
+        The source data -- required so we can generate centroids for each
+        connected component of the graph.
     n_components: int
         The number of distinct components to be layed out.
-    flavor: str (optional, default 'adaptive')
-        Which method to use to build the similarity matrix. If 'kernel', builds
-        an adaptive diffusion kernel connectivity matrix. If 'transitions', uses the
-        adaptive transition probabilities as an affinity metric. Both methods take the settings
-        `kernel_use` and 'norm' to customize the kernel adaptability level.
-        If 'uniform', simply takes exponential pairwise euclidean distances of the data matrix,
-        as in the original UMAP implementation, and the `kernel_use` and `norm` parameters are
-        set to `None`.
-    kernel_use:
-
-    norm:
-
     component_labels: array of shape (n_samples)
         For each vertex in the graph the label of the component to
         which the vertex belongs.
     dim: int
         The chosen embedding dimension.
-    metric: string or callable (optional, default 'cosine')
+    metric: string or callable (optional, default 'euclidean')
         The metric used to measure distances among the source data points.
-    p: float (optional, default None)
-        The p norm to be used when using '
     metric_kwds: dict (optional, default {})
         Keyword arguments to be passed to the metric function.
         If metric is 'precomputed', 'linkage' keyword can be used to specify
         'average', 'complete', or 'single' linkage. Default is 'average'
-    n_jobs: int
-        Number of threads for nearest-neighbor search.
     Returns
     -------
     component_embedding: array of shape (n_components, dim)
@@ -61,65 +50,90 @@ def component_layout(
     """
 
     component_centroids = np.empty((n_components, data.shape[1]), dtype=np.float64)
-    if flavor == 'uniform':
-        if precomputed:
-            distance_matrix = data
 
+    if metric == "precomputed":
+        # cannot compute centroids from precomputed distances
+        # instead, compute centroid distances using linkage
+        distance_matrix = np.zeros((n_components, n_components), dtype=np.float64)
+        linkage = metric_kwds.get("linkage", "average")
+        if linkage == "average":
+            linkage = np.mean
+        elif linkage == "complete":
+            linkage = np.max
+        elif linkage == "single":
+            linkage = np.min
         else:
-            anbrs = ann.NMSlibTransformer(n_neighbors=n_nbrs,
-                                          metric=metric,
-                                          p=p,
-                                          method='hnsw',
-                                          n_jobs=n_jobs,
-                                          verbose=False).fit(data)
+            raise ValueError(
+                "Unrecognized linkage '%s'. Please choose from "
+                "'average', 'complete', or 'single'" % linkage
+            )
+        for c_i in range(n_components):
+            dm_i = data[component_labels == c_i]
+            for c_j in range(c_i + 1, n_components):
+                dist = linkage(dm_i[:, component_labels == c_j])
+                distance_matrix[c_i, c_j] = dist
+                distance_matrix[c_j, c_i] = dist
+    else:
+        for label in range(n_components):
+            component_centroids[label] = data[component_labels == label].mean(axis=0)
 
-            knn = anbrs.transform(data)
-            x, y, dists = find(knn)
-            distance_matrix = dists
+        if scipy.sparse.isspmatrix(component_centroids):
+            warn(
+                "Forcing component centroids to dense; if you are running out of "
+                "memory then consider increasing n_neighbors."
+            )
+            component_centroids = component_centroids.toarray()
 
-        affinity_matrix = np.exp(-(distance_matrix ** 2))
-
-    if flavor == 'adaptive':
-        if precomputed:
-            affinity_matrix = data
+        if metric in SPECIAL_METRICS:
+            distance_matrix = pairwise_special_metric(
+                component_centroids, metric=metric
+            )
+        elif metric in SPARSE_SPECIAL_METRICS:
+            distance_matrix = pairwise_special_metric(
+                component_centroids, metric=SPARSE_SPECIAL_METRICS[metric]
+            )
         else:
-            diff = diffusion.Diffusor(n_neighbors=n_nbrs,
-                                          ann_dist=metric,
-                                          n_jobs=n_jobs,
-                                          verbose=False).fit(data)
-            affinity_matrix = diff.K
+            if callable(
+                metric
+            ) and scipy.sparse.isspmatrix(data):
+                function_to_name_mapping = {
+                    v: k for k, v in sparse_named_distances.items()
+                }
+                try:
+                    metric_name = function_to_name_mapping[metric]
+                except KeyError:
+                    raise NotImplementedError(
+                        "Multicomponent layout for custom "
+                        "sparse metrics is not implemented at "
+                        "this time."
+                    )
+                distance_matrix = pairwise_distances(
+                    component_centroids, metric=metric_name, **metric_kwds
+                )
+            else:
+                distance_matrix = pairwise_distances(
+                    component_centroids, metric=metric, **metric_kwds
+                )
 
-    if flavor == 'transitions':
-        if precomputed:
-            affinity_matrix = data
+    affinity_matrix = np.exp(-(distance_matrix ** 2))
 
-        else:
-            diff = diffusion.Diffusor(n_neighbors=50,
-                                          ann_dist=metric,
-                                          n_jobs=n_jobs,
-                                          kernel_use=kernel_use,
-                                          norm=norm,
-                                          verbose=False).fit(data)
-            affinity_matrix = diff.T
-
-    component_embedding = SpectralEmbedding(n_components=dim,
-                                            affinity="precomputed",
-                                            random_state=random_state,
-                                            n_neighbors=n_nbrs).fit_transform(affinity_matrix)
+    component_embedding = SpectralEmbedding(
+        n_components=dim, affinity="precomputed", random_state=random_state
+    ).fit_transform(affinity_matrix)
     component_embedding /= component_embedding.max()
 
     return component_embedding
 
 
-def multi_component_layout(data,
+def multi_component_layout(
+    data,
+    graph,
     n_components,
-    flavor,
     component_labels,
     dim,
     random_state,
-    nn_method='nmslib',
-    metric="cosine",
-    metric_kwds={}
+    metric="euclidean",
+    metric_kwds={},
 ):
     """Specialised layout algorithm for dealing with graphs with many connected components.
     This will first fid relative positions for the components by spectrally embedding

@@ -2,6 +2,8 @@ from typing import Optional, Union
 import warnings
 import time
 import numpy as np
+import pandas as pd
+
 from packaging import version
 from sklearn.utils import check_random_state, check_array
 
@@ -26,8 +28,100 @@ except ImportError:
 
 from .graph_utils import simplicial_set_embedding, find_ab_params
 
+from sklearn.base import TransformerMixin
 
-def fuzzy_embedding(graph,
+
+
+class MAP(TransformerMixin):
+    """
+    Sklearn estimator for Manifold Approximation and Projection that allows one to do
+    both uniform and pairwise-controlled optimizations (as in UMAP and PaCMAP). Additionally,
+    we implement the diffusion-controlled optimization, which is more stable and gives generally better results.
+
+    Parameters
+    ----------
+
+    n_components : Number of diffusion components to compute. Defaults to 100. We suggest larger values if
+                   analyzing more than 10,000 cells.
+
+    n_neighbors : Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
+                  distance of its median neighbor.
+
+    knn_dist : Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
+               different metrics, such as 'cosine' and 'jaccard'. The 'hamming' and 'jaccard' distances are also available
+               for string vectors.
+
+    ann : Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
+
+    alpha : Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
+            Defaults to 1, which is suitable for normalized data.
+
+    n_jobs : Number of threads to use in calculations. Defaults to all but one.
+
+    verbose : controls verbosity.
+
+
+    Returns
+    -------------
+        Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
+        resulting components to use during Multiscaling.
+
+    Example
+    -------------
+
+    import numpy as np
+    from sklearn.datasets import load_digits
+    from scipy.sparse import csr_matrix
+    import dbmap
+
+    # Load the MNIST digits data, convert to sparse for speed
+    digits = load_digits()
+    data = csr_matrix(digits)
+
+    # Fit the anisotropic diffusion process
+    diff = dbmap.diffusion.Diffusor()
+    res = diff.fit_transform(data)
+
+    """
+
+    def __init__(self,
+                 layout_method='pairwise',
+                 n_components=50,
+                 n_neighbors=10,
+                 alpha=1,
+                 n_jobs=10,
+                 ann=True,
+                 ann_dist='cosine',
+                 p=None,
+                 M=30,
+                 efC=100,
+                 efS=100,
+                 knn_dist='cosine',
+                 kernel_use='decay',
+                 transitions=True,
+                 eigengap=True,
+                 norm=False,
+                 verbose=True):
+        self.n_components = n_components
+        self.n_neighbors = n_neighbors
+        self.alpha = alpha
+        self.n_jobs = n_jobs
+        self.ann = ann
+        self.ann_dist = ann_dist
+        self.p = p
+        self.M = M
+        self.efC = efC
+        self.efS = efS
+        self.knn_dist = knn_dist
+        self.kernel_use = kernel_use
+        self.transitions = transitions
+        self.eigengap = eigengap
+        self.norm = norm
+        self.verbose = verbose
+
+
+def simplicial_set_embedding(data,
+                    graph,
                     n_components=2,
                     initial_alpha=1,
                     min_dist=0.6,

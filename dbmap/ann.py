@@ -365,7 +365,7 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
         # Use sklearn for exact neighbor search
         start = time.time()
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors,
-                                metric='cosine',
+                                metric=self.metric,
                                 algorithm='brute').fit(data)
         knn = nbrs.kneighbors(data)
         end = time.time()

@@ -1,29 +1,29 @@
 from warnings import warn
 import numpy as np
 from . import ann
+from . import diffusion
 import scipy.sparse
 import scipy.sparse.csgraph
 from sklearn.manifold import SpectralEmbedding
+from sklearn.metrics import pairwise_distances
 
 def component_layout(
     data,
     n_components,
     flavor,
-    component_labels,
     dim,
     random_state,
-    nn_method='nmslib',
     metric="cosine",
-    metric_kwds={}
+    p=None,
+    precomputed=False,
 ):
     """Provide a layout relating the separate connected components. This is done
     by taking the centroid of each component and then performing a spectral embedding
     of the centroids. Derived from UMAP initialization.
     Parameters
     ----------
-    data: array of shape (n_samples, n_features)
-        The source data -- required so we can generate centroids for each
-        connected component of the graph.
+    data: array of shape (n_samples, n_samples)
+        Distance matrix from data.
     n_components: int
         The number of distinct components to be layed out.
     flavor: str (optional, default 'adaptive')
@@ -34,6 +34,10 @@ def component_layout(
         If 'uniform', simply takes exponential pairwise euclidean distances of the data matrix,
         as in the original UMAP implementation, and the `kernel_use` and `norm` parameters are
         set to `None`.
+    kernel_use:
+
+    norm:
+
     component_labels: array of shape (n_samples)
         For each vertex in the graph the label of the component to
         which the vertex belongs.
@@ -47,6 +51,8 @@ def component_layout(
         Keyword arguments to be passed to the metric function.
         If metric is 'precomputed', 'linkage' keyword can be used to specify
         'average', 'complete', or 'single' linkage. Default is 'average'
+    n_jobs: int
+        Number of threads for nearest-neighbor search.
     Returns
     -------
     component_embedding: array of shape (n_components, dim)
@@ -55,53 +61,51 @@ def component_layout(
     """
 
     component_centroids = np.empty((n_components, data.shape[1]), dtype=np.float64)
-
-    if metric == "precomputed":
-        # cannot compute centroids from precomputed distances
-        # instead, compute centroid distances using linkage
-        distance_matrix = np.zeros((n_components, n_components), dtype=np.float64)
-        linkage = metric_kwds.get("linkage", "average")
-        if linkage == "average":
-            linkage = np.mean
-        elif linkage == "complete":
-            linkage = np.max
-        elif linkage == "single":
-            linkage = np.min
-        else:
-            raise ValueError(
-                "Unrecognized linkage '%s'. Please choose from "
-                "'average', 'complete', or 'single'" % linkage
-            )
-        for c_i in range(n_components):
-            dm_i = data[component_labels == c_i]
-            for c_j in range(c_i + 1, n_components):
-                dist = linkage(dm_i[:, component_labels == c_j])
-                distance_matrix[c_i, c_j] = dist
-                distance_matrix[c_j, c_i] = dist
-
-    else:
-        anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
-                                      metric=self.ann_dist,
-                                      p=self.p,
-                                      method='hnsw',
-                                      n_jobs=self.n_jobs,
-                                      M=self.M,
-                                      efC=self.efC,
-                                      efS=self.efS,
-                                      verbose=self.verbose).fit(data)
-        knn = anbrs.transform(data)
-
     if flavor == 'uniform':
+        if precomputed:
+            distance_matrix = data
+
+        else:
+            anbrs = ann.NMSlibTransformer(n_neighbors=n_nbrs,
+                                          metric=metric,
+                                          p=p,
+                                          method='hnsw',
+                                          n_jobs=n_jobs,
+                                          verbose=False).fit(data)
+
+            knn = anbrs.transform(data)
+            x, y, dists = find(knn)
+            distance_matrix = dists
+
         affinity_matrix = np.exp(-(distance_matrix ** 2))
 
     if flavor == 'adaptive':
-        affinity_matrix = np.exp(-(distance_matrix ** 2))
+        if precomputed:
+            affinity_matrix = data
+        else:
+            diff = diffusion.Diffusor(n_neighbors=n_nbrs,
+                                          ann_dist=metric,
+                                          n_jobs=n_jobs,
+                                          verbose=False).fit(data)
+            affinity_matrix = diff.K
 
+    if flavor == 'transitions':
+        if precomputed:
+            affinity_matrix = data
 
+        else:
+            diff = diffusion.Diffusor(n_neighbors=50,
+                                          ann_dist=metric,
+                                          n_jobs=n_jobs,
+                                          kernel_use=kernel_use,
+                                          norm=norm,
+                                          verbose=False).fit(data)
+            affinity_matrix = diff.T
 
-    component_embedding = SpectralEmbedding(
-        n_components=dim, affinity="precomputed", random_state=random_state
-    ).fit_transform(affinity_matrix)
+    component_embedding = SpectralEmbedding(n_components=dim,
+                                            affinity="precomputed",
+                                            random_state=random_state,
+                                            n_neighbors=n_nbrs).fit_transform(affinity_matrix)
     component_embedding /= component_embedding.max()
 
     return component_embedding

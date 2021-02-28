@@ -390,3 +390,4 @@ class NMSlibTransformer(TransformerMixin, BaseEstimator):
 
         """
         self.n_neighbors = n_neighbors
+

@@ -15,38 +15,51 @@ Description: [![Latest PyPI version](https://img.shields.io/pypi/v/dbmap.svg)](h
         
         
         # dbMAP (diffusion-based Manifold Approximation and Projection)
-        A python module for running diffusion-based Manifold Approximaiton and Projection (dbMAP), a fast, accurate and modularized dimensional reduction approach. dbMAP includes a flexible and extendable wrapper for nmslib, for state-of-the-art approximate nearest-neighbors search, functions for fast computation of diffusion dynamics and multiscale maps, and a fast implementation of adapted graph and UMAP layouts. dbMAP was originally designed for the fast analysis and visualization of single-cell omics data - yet, as a general dimensional reduction approach, it can find use in virtually any field in which analysis of high-dimensional data is challenging. For more information on dbMAP, check our [preprint](https://www.researchgate.net/publication/341267564_Comprehensive_Visualization_of_High-Dimensional_Single-Cell_Data_With_Diffusion-Based_Manifold_Approximation_and_Projection_dbMAP).
+        Diffusion-based Manifold Approximaiton and Projection (dbMAP) is a fast, accurate and modularized machine-learning framework that includes metric-learning,
+        diffusion harmonics and dimensional reduction.  dbMAP is particularly useful for analyzing highly-structured
+        data, such as from single-cell RNA sequencing assays. dbMAP was originally designed for the analysis
+        and visualization of single-cell omics data - yet, as a general dimensional reduction approach based on solid discrete differential geometry, it can be useful in virtually any field in which analysis 
+        of high-dimensional data is challenging. 
         
+        Technically, dbMAP essentially  builds an adaptive diffusion graph to denoise and encode data structure, and then visualizes it with UMAP or PaCMAP layouts. The diffusion
+        procedure learns a self-tuning diffusion metric, which can be encoded in a graph that approximates the Laplace-Beltrami Operator. This diffusion-basis addresses
+        UMAP and PaCMAP assumptions on the input connectivity graph, allowing high-resolution final embeddings. For more information on dbMAP,
+         check our [preprint](https://www.researchgate.net/publication/341267564_Comprehensive_Visualization_of_High-Dimensional_Single-Cell_Data_With_Diffusion-Based_Manifold_Approximation_and_Projection_dbMAP).
+        
+        
+        This implementation includes a flexible and extendable wrapper for nmslib, for state-of-the-art approximate nearest-neighbors search, functions for fast computation of 
+        diffusion dynamics and multiscale diffusion maps, and a fast implementation of adapted UMAP and PaCUMAP layouts. 
         Further documentation is available at [Read the Docs](https://dbmap.readthedocs.io/en/latest/).
         
-        # Installation and dependencies
+        
+        ## Installation and dependencies
         
            Prior to installing dbMAP, make sure you have scikit-build and cmake available in your system. These are required for installation.
            ```
              $> sudo apt-get install cmake
              $> pip3 install scikit-build
            ```
-           We're also going to need NMSlib for really fast approximate nearest-neighbor search which powers dbMAP escalability:
+           We're also going to need NMSlib for really fast approximate nearest-neighborhood search, and Annoy for fast indexing:
            ```
-            $> pip3 install nmslib
+            $> pip3 install nmslib annoy
            ```
            You can read more about NMSlib  [here](https://github.com/nmslib/nmslib), and check more on the available distances and spaces documentation [here](https://github.com/nmslib/nmslib/blob/master/manual/spaces.md). dbMAP implements functions derived from scikit-learn base transformers tat make NMSlib more generally extendable to machine-leraning workflows, and we are grateful to the nmslib community for their insights during this process.
            
            dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
            
-           Please note that if you're using the last version of UMAP (umap-learn), you should install our dev branch, which does not rely a prior UMAP function. This is being currently updated for the next version, but for now, new users need to source the repo. 
-           
+           *NOTICE*: as of Feb 27 to March 4, dbMAP is undergoing active development to overhaul UMAP algorithm and discard the dependency, 
+           and to optimize UMAP and PaCMAP layout procedures. To use the last version, please download dbMAP from TestPyPI:
+            
            ```
-           $> git clone -b dev https://github.com/davisidarta/dbMAP
-           $> cd dbMAP
-           #> pip3 install.
+           !python3 -m pip install --index-url https://test.pypi.org/simple/ --upgrade dbmap
            ```
         
-        # Usage - Python
+        
+        ## Using dbMAP
           dbMAP consists of two main steps: an adaptive anisotropic reproduction of the initial input diffusion structure, followed by an accelerated UMAP or graph layout. dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. The adaptive diffusion reduction is recommended over PCA if data is significantly non-linear, and is useful for clustering and downstream analysis. The UMAP and graph layouts are also useful for big data visualization. 
           Here follows some examples on using dbMAP implemented algorithms, including fast neighborhood search, adaptive multiscaled diffusion maps and accelerated UMAP and graph layouts:
           
-          ## 1 - Fast approximate k-nearest-neighbors
+          ### 1 - Fast approximate k-nearest-neighbors
           dbMAP implements the NMSlibTransformer() class, which calls nmslib to perform a fast and accurate approximate nearest neighbor search. The NMSlibTransformer() class has several methods to compute and retrieve this information, and an additional function to measure it's accuracy.
         
            ```
@@ -74,7 +87,7 @@ Description: [![Latest PyPI version](https://img.shields.io/pypi/v/dbmap.svg)](h
            ```
         
         
-          ## 2 - Fast adaptive multiscaled diffusion maps
+          ### 2 - Fast adaptive multiscaled diffusion maps
           dbMAP implements the Diffusor() class, which allows state-of-the-art dimensional reduction by the fast approximation of the Laplace Beltrami operator and automatic detection of intrinsic dimensionality. This algorithm learns a local metric which is normalized and embedded as a diffusion distance on the series of orthogonal components that define structure variability within the initial informational space.
           Default machine-learning analysis sometimes employs PCA on highly non-linear data despite its caveat of being unsuitable for datasets which cannot be represented as a series of linear correlations. The main reason for this is the low computational cost of PCA compared to non-linear dimensional reduction methods. Our implementation is scalable to extremely high-dimensional datasets (10e9 samples) and oughts to provide more reliable information than PCA on real-world, non-linear data. Similarly to our fast nearest-neighbor implementation, we provide utility functions to obtain results in different formats.
           
@@ -108,7 +121,7 @@ Description: [![Latest PyPI version](https://img.shields.io/pypi/v/dbmap.svg)](h
          plt.plot(range(0, len(res['EigenValues'])), res['EigenValues'], marker='o')
         ```
           
-          ## 3 - Fast mapping layout:
+          ### 3 - Fast mapping layout:
            
            For scalable big data visualization, we provide a fast mapping layout of the adaptive multiscale diffusion components space. We adapted UMAP to construct fast approximate simplicial complexes wich normalizes the data structure, rendering a comprehensive layout. We also provide fast graph layout of the resulting components with fa2, which implements scalable and interative layouts within networkx. A vanilla UMAP implementation is also provided.
               
@@ -117,37 +130,162 @@ Description: [![Latest PyPI version](https://img.shields.io/pypi/v/dbmap.svg)](h
           from sklearn.datasets import load_digits
           from scipy.sparse import csr_matrix
           import dbmap as dm
+          import umap
         
           # Load some data and convert to CSR for speed:
           digits = load_digits()
           data = csr_matrix(digits.data)
            
-          # Initialize the diffusor object, fit data and transform:
-          res = dm.diffusion.Diffusor().fit(data).transform(data)
-           
-          # Embed graph with a fast approximate UMAP layout:
-          emb = dm.umapper.AMAP(min_dist=0.1).fit_transform(res.to_numpy(dtype='float32'))
-           
-          plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
+          # Fit the diffusion model
+          digits_diff = dm.diffusion.Diffusor(n_neighbors=30, n_components=120,
+                                                kernel_use='simple_adaptive', # The diffusion tool is highly
+                                                norm=True,          # customizable!
+                                                transitions=False).fit(digits.data)
+          # Decompose the diffusion basis
+          db = digits_diff.transform(digits.data)
+            
+          # Visualize data intrinsic dimensionality
+          res = digits_diff.return_dict()
+          plt.plot(range(0, len(res['EigenValues'])), res['EigenValues'])
+          plt.show()  
+        
+          # We're currently improving the non-uniform simplicial embedding and introducing an adaptive optimization layout procedure (AdapMAP). 
+          # Please use vanilla UMAP or our implementation of PaCMAP in the meanwhile:
+          
+          # Embed diffusion graph with vanilla UMAP:
+          db_umap_emb = dm.map.UMAP(n_epochs=100).fit(transform(db.to_numpy(dtype='float32'))
+          
+          plt.scatter(db_umap_emb[:, 0], db_umap_emb[:, 1], c=digits.target, cmap='Spectral', s=5)
           plt.gca().set_aspect('equal', 'datalim')
           plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-          plt.title('dbMAP projection of the Digits dataset', fontsize=24)
+          plt.title('UMAP projection of Digits diffusion graph', fontsize=24)
           plt.show()
         
-          # Embed graph with vanilla UMAP:
-          emb = dm.map.UMAP().fit(transform(res.to_numpy(dtype='float32'))
-           
-          plt.scatter(emb[:, 0], emb[:, 1], c=digits.target, cmap='Spectral', s=5)
+          # Embed diffusion graph with PaCMAP using a sparsely-optimized UMAP initialization:
+          init = dm.map.UMAP(n_epochs=100).fit(transform(db.to_numpy(dtype='float32'))
+          dbpac = dm.pacmapper.PaCMAP(n_dims=2, n_neighbors=None, MN_ratio=0.5, FP_ratio=2.0) 
+          dbpac_emb = embedding.fit_transform(db, init=db_umap_emb)  
+        
+          plt.scatter(dacmap_emb[:, 0], dacmap_emb[:, 1], c=digits.target, cmap='Spectral', s=5)
           plt.gca().set_aspect('equal', 'datalim')
           plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-          plt.title('MSDCs on UMAP projection of the Digits dataset', fontsize=24)
-          plt.show()
-           
-           
-          # TODO: GRAPH_LAYOUT UTILITY
-           
+          plt.title('PaCMAP projection of the Digits diffusion graph', fontsize=24)
           ```
          ![dbMAP handwritten digits visualization](https://github.com/davisidarta/dbMAP/blob/master/Digits.png)
+        
+        # Examples of using dbMAP on single-cell RNA sequencing data
+        
+        dbMAP excels at the analysis of single-cell RNA sequencing data. We provide straighforward scripts to use dbMAP with
+        scanpy in python and with Seurat in R.
+        
+        ## Python - Scanpy
+        
+        ```
+        # Import some packages
+        import numpy as np
+        from scipy.sparse import csr_matrix
+        import dbmap as dm
+        import scanpy as sc
+        
+        # Load your data (raw or normalized cells x genes 
+        # or cells x variable_genes, but NOT SCALED!)
+        adata = sc.read_h5ad(YOUR ANNDATA)
+        
+        # It's computationally very cheap to diffuse on sparse matrices
+        data = csr_matrix(adata.X) 
+        
+        # Fit the diffusion process
+        diff = dm.diffusion.Diffusor(ann_dist='cosine', 
+                                     n_jobs=8,
+                                     n_neighbors=15, n_components=120,
+                                     kernel_use='decay_adaptive',
+                                     transitions=False, norm=False).fit(data)
+        # Decompose graph
+        db = diff.transform(data)
+        
+        db = np.array(db)
+        res = diff.return_dict()
+        adata.obsm['X_db'] = db
+        
+        # Visualize meaningful components and the eigengap
+        import matplotlib.pyplot as plt
+        plt.plot(range(0, len(res['EigenValues'])), res['EigenValues'], marker='o')
+        
+        # Diffusion graph clustering
+        sc.pp.neighbors(adata, n_neighbors=10, use_rep='X_db', metric='euclidean')
+        sc.tl.leiden(adata, resolution=0.4)
+        
+        # Diffusion graph layout with UMAP
+        import umap
+        db_umap_emb = umap.UMAP().fit_transform(db)
+        adata.obsm['X_dbmap'] = db_umap_emb
+        sc.pl.embedding(adata, basis ='X_dbmap', color='clusters') 
+        
+        # Diffusion graph layout with PaCMAP on the diffusion basis
+        db_pac_emb = dm.pacmapper.PaCMAP(n_dims=2, n_neighbors=15, MN_ratio=3, FP_ratio=.5) 
+        db_pac_emb_fit = db_pac_emb.fit_transform(db, init='random')
+        adata.obsm['X_db_pacmap'] = db_pac_emb_fit
+        sc.pl.embedding(adata, basis ='X_db_pacmap', color='clusters')
+        
+        # Diffusion graph layout with PaCMAPUMAP on the diffusion basis
+        db_pac_emb = dm.pacmapper.PaCMAP(n_dims=2, n_neighbors=15, MN_ratio=3, FP_ratio=.5) 
+        db_pac_emb_fit = db_pac_emb.fit_transform(db, init='random')
+        adata.obsm['X_db_pacmap'] = db_pac_emb_fit
+        ```
+        
+        
+        ## R with Reticulate - Seurat
+        
+        ```
+        # Call dbMAP python diffusion functions with reticulate and use vanilla UMAP layout of the diffusion graph on Seurat
+        
+        library(reticulate)
+        np <- reticulate::import("numpy")
+        pd <- reticulate::import("pandas")
+        sp <- reticulate::import("scipy")
+        dbmap <- reticulate::import('dbmap')
+        
+        dat <- YOUR_SEURAT_OBJECT
+        
+        data <- t(dat@assays$YOUR_ASSAY@data[VariableFeatures(dat),])
+        a <- r_to_py(data)
+        b <- a$tocsr()
+        diff <- dbmap$diffusion$Diffusor(n_components = as.integer(80), n_neighbors = as.integer(15),
+                                         transitions = as.logical(F),
+                                         norm = as.logical(T), ann_dist = as.character('cosine'),
+                                         n_jobs = as.integer(10), kernel_use = as.character('decay_adaptive')
+        )
+        diff = diff$fit(b)
+        db = as.matrix(diff$transform(b))
+        res = diff$return_dict()
+        
+        #Visualize meaningful diffusion components.
+        evals <- py_to_r(res$EigenValues)
+        plot(evals) 
+        
+        # Deal with names
+        rownames(db) <- colnames(dat)
+        new_names <- list()
+        for(i in 1:length(colnames(db))){new_names[i] <- paste('DB_' , as.integer(colnames(sc[i])) + 1, sep = '')}
+        colnames(db) <- as.vector(new_names)
+        names(evals) <- as.vector(new_names)
+        
+        # Return to Seurat
+        dat[["db"]] <- CreateDimReducObject(embeddings = db, key = "db_", assay = DefaultAssay(dat))
+        
+        # Cluster on the diffusion graph
+        dat <- FindNeighbors(dat, reduction = 'db', dims = 1:ncol(dat@reductions$db@cell.embeddings), annoy.metric = 'cosine', graph.name = 'dbgraph')
+        dat <- FindClusters(dat, resolution = 1, graph.name = 'dbgraph', algorithm = 2)
+        
+        # UMAP layout of the diffusion graph
+        dat <- RunUMAP(dat, reduction = 'db', dims = 1:ncol(dat@reductions$db@cell.embeddings), n.neighbors = 10, init = 'spectral',
+                       min.dist = 0.6, spread = 1.5, learning.rate = 1.5, n.epochs = 200, reduction.key = 'dbMAP_', reduction.name = 'dbmap')
+        
+        # Plot
+        DimPlot(dat, reduction = 'dbmap', group.by = 'seurat_clusters', pt.size = 1)
+        
+        ```
+        
         
         # Benchmarking
         

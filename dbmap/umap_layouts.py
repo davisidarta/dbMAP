@@ -5,8 +5,8 @@
 # https://github.com/lmcinnes/umap, and https://umap-learn.readthedocs.io/  .
 import numpy as np
 import numba
-import umap.distances as dist
-from umap.utils import tau_rand_int
+from . import distances as dist
+from .utils import tau_rand_int
 
 
 @numba.njit()

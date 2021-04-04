@@ -39,8 +39,26 @@ class Diffusor(TransformerMixin):
 
     ann : Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
 
+    ann_dist : Distance metric for building an approximate kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
+               different metrics, such as 'cosine' and 'jaccard'. The 'hamming' and 'jaccard' distances are also available
+               for string vectors.
+
+    transitions: Whether to estimate the diffusion transitions graph. If `True`, returns a transitional
+                 basis encoding neighborhood transition probability.
+
     alpha : Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
             Defaults to 1, which is suitable for normalized data.
+
+    kernel_use: Which type of kernel to use. There are four implemented, considering the adaptive decay and the
+                neighborhood expansion, written as 'simple', 'decay', 'simple_adaptive' and 'decay_adaptive'.
+
+                - The first, 'simple', is a locally-adaptive kernel similar to that proposed by Nadler et al.(https://doi.org/10.1016/j.acha.2005.07.004)
+                and implemented in Setty et al. (https://doi.org/10.1038/s41587-019-0068-4).
+
+                - The 'decay' option applies an adaptive decay rate, but no neighborhood expansion.
+
+                Those, followed by '_adaptive', apply the neighborhood expansion process. The default and recommended is 'decay_adaptive'.
+                The neighborhood expansion can impact runtime, although this is not usually expressive for datasets under 10e6 samples.
 
     n_jobs : Number of threads to use in calculations. Defaults to all but one.
 

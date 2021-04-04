@@ -59,9 +59,6 @@ dbmap/__pycache__/umap_layouts.rdist-32.py38.1.nbc
 dbmap/__pycache__/umap_layouts.rdist-32.py38.nbi
 dbmap/__pycache__/utils.cpython-38.pyc
 dbmap/__pycache__/version.cpython-38.pyc
-dist/dbmap-1.2.0.2-py3-none-any.whl
-dist/dbmap-1.2.0.2-py3.8.egg
-dist/dbmap-1.2.0.2.tar.gz
 docs/Makefile
 docs/docs.md
 docs/index.md

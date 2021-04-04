@@ -1,7 +1,50 @@
+# These are some adapted functions implemented in UMAP, added here with some changes
+# Originally implemented by Leland McInnes at https://github.com/lmcinnes/umap
+# License: BSD 3 clause
+#
+# For more information on the original UMAP implementation, please see: https://umap-learn.readthedocs.io/
+#
+# BSD 3-Clause License
+#
+# Copyright (c) 2017, Leland McInnes
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+
+
+
 from typing import Optional, Union
 import warnings
 import time
 import numpy as np
+import pandas as pd
+
 from packaging import version
 from sklearn.utils import check_random_state, check_array
 
@@ -26,8 +69,100 @@ except ImportError:
 
 from .graph_utils import simplicial_set_embedding, find_ab_params
 
+from sklearn.base import TransformerMixin
 
-def fuzzy_embedding(graph,
+
+
+class MAP(TransformerMixin):
+    """
+    Sklearn estimator for Manifold Approximation and Projection that allows one to do
+    both uniform and pairwise-controlled optimizations (as in UMAP and PaCMAP). Additionally,
+    we implement the diffusion-controlled optimization, which is more stable and gives generally better results.
+
+    Parameters
+    ----------
+
+    n_components : Number of diffusion components to compute. Defaults to 100. We suggest larger values if
+                   analyzing more than 10,000 cells.
+
+    n_neighbors : Number of k-nearest-neighbors to compute. The adaptive kernel will normalize distances by each cell
+                  distance of its median neighbor.
+
+    knn_dist : Distance metric for building kNN graph. Defaults to 'euclidean'. Users are encouraged to explore
+               different metrics, such as 'cosine' and 'jaccard'. The 'hamming' and 'jaccard' distances are also available
+               for string vectors.
+
+    ann : Boolean. Whether to use approximate nearest neighbors for graph construction. Defaults to True.
+
+    alpha : Alpha in the diffusion maps literature. Controls how much the results are biased by data distribution.
+            Defaults to 1, which is suitable for normalized data.
+
+    n_jobs : Number of threads to use in calculations. Defaults to all but one.
+
+    verbose : controls verbosity.
+
+
+    Returns
+    -------------
+        Diffusion components ['EigenVectors'], associated eigenvalues ['EigenValues'] and suggested number of
+        resulting components to use during Multiscaling.
+
+    Example
+    -------------
+
+    import numpy as np
+    from sklearn.datasets import load_digits
+    from scipy.sparse import csr_matrix
+    import dbmap
+
+    # Load the MNIST digits data, convert to sparse for speed
+    digits = load_digits()
+    data = csr_matrix(digits)
+
+    # Fit the anisotropic diffusion process
+    diff = dbmap.diffusion.Diffusor()
+    res = diff.fit_transform(data)
+
+    """
+
+    def __init__(self,
+                 layout_method='pairwise',
+                 n_components=50,
+                 n_neighbors=10,
+                 alpha=1,
+                 n_jobs=10,
+                 ann=True,
+                 ann_dist='cosine',
+                 p=None,
+                 M=30,
+                 efC=100,
+                 efS=100,
+                 knn_dist='cosine',
+                 kernel_use='decay',
+                 transitions=True,
+                 eigengap=True,
+                 norm=False,
+                 verbose=True):
+        self.n_components = n_components
+        self.n_neighbors = n_neighbors
+        self.alpha = alpha
+        self.n_jobs = n_jobs
+        self.ann = ann
+        self.ann_dist = ann_dist
+        self.p = p
+        self.M = M
+        self.efC = efC
+        self.efS = efS
+        self.knn_dist = knn_dist
+        self.kernel_use = kernel_use
+        self.transitions = transitions
+        self.eigengap = eigengap
+        self.norm = norm
+        self.verbose = verbose
+
+
+def simplicial_set_embedding(data,
+                    graph,
                     n_components=2,
                     initial_alpha=1,
                     min_dist=0.6,

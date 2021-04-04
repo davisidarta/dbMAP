@@ -118,7 +118,7 @@ class Diffusor(TransformerMixin):
             print('The original kernel implementation used transitions computation. Set `transitions` to `True`'
                   'for similar results.')
         if self.kernel_use not in ['simple', 'simple_adaptive', 'decay', 'decay_adaptive']:
-            raise Exception('Kernel must be either \'simple\', \'simple_adaptive\', \'decay\' or \'decay_adaptive\'.')
+            raise Exception('Kernel must be either \'simple\', \'simple_adaptive\', \'decay\' or \'decay_adaptive\'.') 
         if self.ann:
             # Construct an approximate k-nearest-neighbors graph
             anbrs = ann.NMSlibTransformer(n_neighbors=self.n_neighbors,
@@ -164,8 +164,15 @@ class Diffusor(TransformerMixin):
         # adaptive neighborhood size
         if self.kernel_use == 'simple_adaptive' or self.kernel_use == 'decay_adaptive':
             # increase neighbor search:
-            anbrs.update_search(n_neighbors=int(self.n_neighbors + (self.n_neighbors - pm.max())))
-            knn_new = anbrs.transform(data)
+            anbrs_new = ann.NMSlibTransformer(n_neighbors=int(self.n_neighbors + (self.n_neighbors - pm.max())),
+                                              metric=self.ann_dist,
+                                              method='hnsw',
+                                              n_jobs=self.n_jobs,
+                                              p=self.p,
+                                              M=self.M,
+                                              efC=self.efC,
+                                              efS=self.efS).fit(data)
+            knn_new = anbrs_new.transform(data)
 
             x_new, y_new, dists_new = find(knn_new)
 
@@ -194,11 +201,11 @@ class Diffusor(TransformerMixin):
 
         if self.kernel_use == 'decay_adaptive':
             # X, y specific stds
-            dists = (dists_new / (adap_nbr[x_new]+ 1e-10)) ** np.power(2, (((int(self.n_neighbors + (self.n_neighbors - pm.max()))) - pm[x_new]) / pm[x_new]))  # Normalize by normalized contribution to neighborhood size.
+            dists = (dists_new / (adap_nbr[x_new] + 1e-10)) ** np.power(2, (((int(self.n_neighbors + (self.n_neighbors - pm.max()))) - pm[x_new]) / pm[x_new]))  # Normalize by normalized contribution to neighborhood size.
             W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])
 
         # Kernel construction
-        kernel = W + W.T
+        kernel = (W + W.T) / 2
         self.K = kernel
 
         # handle nan, zeros
@@ -281,11 +288,10 @@ class Diffusor(TransformerMixin):
             inds = np.argsort(D)[::-1]
             D = D[inds]
             V = V[:, inds]
-            # Normalize by the first diffusion component
-            for i in range(V.shape[1]):
-                V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
-
+        # Normalize by the first diffusion component
+        for i in range(V.shape[1]):
+            V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
         # Create the results dictionary
         self.res = {'EigenVectors': V, 'EigenValues': D, 'kernel': self.K}
@@ -294,14 +300,14 @@ class Diffusor(TransformerMixin):
 
         mms = multiscale.multiscale(self.res)
 
-        self.res['StructureComponents'] = mms
+        self.res['MultiscaleComponents'] = mms
 
         end = time.time()
         if self.verbose:
             print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
                   (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
-        return self.res['StructureComponents']
+        return self.res['MultiscaleComponents']
 
     def ind_dist_grad(self, data, n_components=None, dense=False):
         """Effectively computes on data. Also returns the normalized diffusion distances,

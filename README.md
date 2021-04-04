@@ -16,12 +16,12 @@ dbMAP explores the use of the [Laplace-Beltrami Operator](https://en.wikipedia.o
 By extending [Diffusion Maps](https://en.wikipedia.org/wiki/Diffusion_map#:~:text=Diffusion%20maps%20is%20a%20dimensionality,diffusion%20operator%20on%20the%20data.) and providing a scalable and computationally efficient implementation of the algorithm,
 it is possible to learn a diffusion basis that approximate the LBO. In dbMAP, this adaptive diffusion basis is used to estimate data's intrinsic dimensionality and then multiscaled to account for all possible diffusion timescales.
 From this basis, it is possible to build a _diffusion graph_, which can be visualized with different layout optimizations. Originally, we devised the layout optimization step to be performed with UMAP with a multi-component Laplacian Eigenmaps initialization.
-Since the LBO is approximated by the diffusion basis, the LE initialization and the UMAP optimization, this leads to a geometrical consensus on the structure of the underlying data, providing fine visualizations.
+Since the LBO is approximated by the diffusion basis, the LE initialization and the seminal [UMAP](https://umap-learn.readthedocs.io/en/latest/index.html) optimization, this leads to a geometrical consensus on the structure of the underlying data, providing fine visualizations.
 However, recently developed optimization methods, such as [PaCMAP](https://github.com/YingfanWang/PaCMAP) and [pyMDE](https://pymde.org/index.html) can also be employed for laying out the diffusion graph.
 For more information on dbMAP, check our [preprint](https://www.researchgate.net/publication/341267564_Comprehensive_Visualization_of_High-Dimensional_Single-Cell_Data_With_Diffusion-Based_Manifold_Approximation_and_Projection_dbMAP).
 
 This implementation includes a flexible and extendable wrapper for nmslib, for state-of-the-art approximate nearest-neighbors search, functions for fast computation of 
-diffusion dynamics and multiscale diffusion maps, and a fast implementation of adapted UMAP and PaCUMAP layouts. 
+diffusion dynamics and multiscale diffusion maps into a diffusion basis, and faster implementations of adapted UMAP and PaCUMAP layouts.
 Further documentation is available at [Read the Docs](https://dbmap.readthedocs.io/en/latest/).
 
 ## Installation and dependencies
@@ -36,15 +36,7 @@ Further documentation is available at [Read the Docs](https://dbmap.readthedocs.
     $> pip3 install nmslib annoy
    ```
    You can read more about NMSlib  [here](https://github.com/nmslib/nmslib), and check more on the available distances and spaces documentation [here](https://github.com/nmslib/nmslib/blob/master/manual/spaces.md). dbMAP implements functions derived from scikit-learn base transformers tat make NMSlib more generally extendable to machine-leraning workflows, and we are grateful to the nmslib community for their insights during this process.
-   
-   dbMAP has been implemented in Python3, and can be installed using `pip3 install dbmap`, or `pip install dbmap` if python3 is your default python interpreter.
-   
-   *NOTICE*: as of Feb 27 to April 4, dbMAP is undergoing active development for our new preprint release. To make sure you're using the latest version, please download dbMAP from TestPyPI:
-    
-   ```
-   $> python3 -m pip install --index-url https://test.pypi.org/simple/ --upgrade dbmap
-   ```
-
+   For now the dependency on annoy is intended to give support to the PaCMAP optimization, but I'm working on keeping it to all to NMSlib.
 
 ## Using dbMAP
   dbMAP consists of two main steps: an adaptive anisotropic reproduction of the initial input diffusion structure, followed by an accelerated UMAP or graph layout. dbMAP runs on numpy arrays, pandas dataframes and csr or coo sparse matrices. The adaptive diffusion reduction is recommended over PCA if data is significantly non-linear, and is useful for clustering and downstream analysis. The UMAP and graph layouts are also useful for big data visualization. 

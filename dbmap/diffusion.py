@@ -205,7 +205,7 @@ class Diffusor(TransformerMixin):
             W = csr_matrix((np.exp(-dists), (x_new, y_new)), shape=[self.N, self.N])
 
         # Kernel construction
-        kernel = W + W.T
+        kernel = (W + W.T) / 2
         self.K = kernel
 
         # handle nan, zeros
@@ -288,11 +288,10 @@ class Diffusor(TransformerMixin):
             inds = np.argsort(D)[::-1]
             D = D[inds]
             V = V[:, inds]
-            # Normalize by the first diffusion component
-            for i in range(V.shape[1]):
-                V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
-
+        # Normalize by the first diffusion component
+        for i in range(V.shape[1]):
+            V[:, i] = V[:, i] / np.linalg.norm(V[:, i])
 
         # Create the results dictionary
         self.res = {'EigenVectors': V, 'EigenValues': D, 'kernel': self.K}
@@ -301,14 +300,14 @@ class Diffusor(TransformerMixin):
 
         mms = multiscale.multiscale(self.res)
 
-        self.res['StructureComponents'] = mms
+        self.res['MultiscaleComponents'] = mms
 
         end = time.time()
         if self.verbose:
             print('Diffusion time = %f (sec), per sample=%f (sec), per sample adjusted for thread number=%f (sec)' %
                   (end - self.start_time, float(end - self.start_time) / self.N, self.n_jobs * float(end - self.start_time) / self.N))
 
-        return self.res['StructureComponents']
+        return self.res['MultiscaleComponents']
 
     def ind_dist_grad(self, data, n_components=None, dense=False):
         """Effectively computes on data. Also returns the normalized diffusion distances,

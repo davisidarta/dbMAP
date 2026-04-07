@@ -3,7 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/dbmap/badge/?version=latest)](https://dbmap.readthedocs.io/en/latest/?badge=latest)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/DaviSidarta.svg?label=Follow%20%40davisidarta&style=social)](https://twitter.com/davisidarta)
 
-
+# This project has been discontinued. Much better implementations and utilities are available in its evolved sibling, TopoMetry: https://github.com/davisidarta/topometry
 
 # dbMAP (diffusion-based Manifold Approximation and Projection)
 Diffusion-based Manifold Approximaiton and Projection (dbMAP) is a fast, accurate and modularized machine-learning framework that includes metric-learning,
